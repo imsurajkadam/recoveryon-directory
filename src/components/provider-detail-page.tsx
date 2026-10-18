@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, Phone, Star } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
+import { ProviderReviews } from "@/components/provider-reviews";
 import { providerPath } from "@/lib/providers";
 import { absoluteUrl, sourceDisplayName } from "@/lib/site";
 import type { Provider } from "@/lib/types";
@@ -51,7 +52,13 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
       <div className="breadcrumb"><Link href="/directory">Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
       <div className="provider-hero-copy">
         <div>{provider.isSponsored && <span className="kicker plain">Featured listing</span>}<h1>{provider.name}</h1><p><MapPin size={18} /> {provider.city}, {provider.state}</p></div>
-        <div className="provider-hero-status"><BadgeCheck size={18} /> {verificationLabels[provider.verificationStatus]}</div>
+        <details className="provider-hero-status verification-badge">
+          <summary><BadgeCheck size={18} /> {verificationLabels[provider.verificationStatus]}</summary>
+          <div className="verification-details">
+            <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "The provider confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? "We verified this data against public records and source documents." : "This listing is compiled from public source data and has not yet been independently verified."}</p>
+            <p><Link href="/how-we-verify">Read our verification standards</Link></p>
+          </div>
+        </details>
       </div>
     </div></section>
 
@@ -111,6 +118,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <span className="section-label">Payment</span><h2>Accepted insurance and payment options</h2>
           {provider.insurance.length ? <InformationTags items={provider.insurance} /> : <p>No accepted insurance partners are named in the available source data.</p>}
           {provider.insuranceDetails && <p className="source-detail">Source information: {provider.insuranceDetails}</p>}
+          {provider.priceRange && <p className="price-estimate"><DollarSign size={16} /> <strong>Estimated cost:</strong> {provider.priceRange} <span className="estimate-note">(estimate, verify directly)</span></p>}
           <p className="section-caution">Insurance participation changes. Verify network status, authorization requirements, and expected out-of-pocket cost with both the provider and insurer.</p>
         </section>
 
@@ -128,6 +136,8 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <p>{provider.licenseSummary || "Licensing details have not yet been independently summarized by TreatmentLane. Ask which state agency licenses this location and verify the license directly."}</p>
           {provider.accreditation.length > 0 && <InformationTags items={provider.accreditation} />}
         </section>
+
+        <ProviderReviews providerId={provider.id} providerName={provider.name} />
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>
