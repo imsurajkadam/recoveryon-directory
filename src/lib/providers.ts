@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { getDatabase } from "@/lib/db";
+import { brandImageUrl } from "@/lib/site";
 import type { Provider } from "@/lib/types";
 
 type ProviderRow = {
@@ -28,13 +29,14 @@ const providerColumns = `id, name, slug, organization_slug, location_slug, descr
       and organization_locations.publication_status = 'published')::int as organization_location_count`;
 
 const listingPlaceholderPath = "/images/treatmentlane-listing-placeholder.webp";
+const listingPlaceholderUrl = brandImageUrl("treatmentlane-listing-placeholder.webp");
 
 function normalizeProviderImageUrl(value: string | null) {
   if (!value) return null;
   try {
     const url = new URL(value);
     if ((url.hostname === "treatmentlane.com" || url.hostname === "www.treatmentlane.com") && url.pathname === listingPlaceholderPath) {
-      return listingPlaceholderPath;
+      return listingPlaceholderUrl;
     }
   } catch {
     return value;

@@ -155,7 +155,7 @@ function recoveryAmenities(row) {
 }
 
 const RECOVERY_BRANDED_IMAGE = "og-image-recovery-com.jpg";
-const TREATMENTLANE_BRANDED_IMAGE = "https://treatmentlane.com/images/treatmentlane-listing-placeholder.webp";
+const TREATMENTLANE_BRANDED_IMAGE = "https://images.treatmentlane.com/brand/treatmentlane-listing-placeholder.webp";
 
 function cleanImages(row) {
   const candidates = [row.featured_image, ...clean(row.all_images).split(/\s*\|\s*/)].map((value) => clean(value).replace(/\\$/, ""));

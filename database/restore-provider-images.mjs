@@ -7,7 +7,7 @@ const args = new Set(process.argv.slice(2));
 const commit = args.has("--commit");
 const root = process.cwd();
 const recoveryPath = resolve(root, process.env.RECOVERY_CSV || "work/data/recovery-centers-usa.csv");
-const placeholderUrl = "https://treatmentlane.com/images/treatmentlane-listing-placeholder.webp";
+const placeholderUrl = "https://images.treatmentlane.com/brand/treatmentlane-listing-placeholder.webp";
 const recoveryBrandedAsset = "og-image-recovery-com.jpg";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");

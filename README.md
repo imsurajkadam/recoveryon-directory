@@ -54,3 +54,23 @@ The sitemap, robots file, metadata, structured data, social image, and canonical
 - Label paid placement as sponsored; payment must not determine verification status.
 
 The original static prototype is preserved in `legacy-prototype/` for reference and is not served by the production app.
+
+## Provider image storage
+
+TreatmentLane-owned images are served from the `treatmentlane-images` Cloudflare R2 bucket through `https://images.treatmentlane.com`.
+
+The provider image migration is a dry run unless `--apply` is passed. It writes a private rollback export before changing any provider row, uploads each object before updating its URLs, and records per-provider results under the ignored `work/image-migrations` directory.
+
+```bash
+npm run db:migrate-provider-images:r2
+npm run db:migrate-provider-images:r2 -- --apply
+```
+
+External source hosts must be explicitly added to `R2_ALLOWED_SOURCE_HOSTS`. Copying from a host outside TreatmentLane also requires `--confirm-rights`. Use that option only after confirming TreatmentLane has permission to store and serve those files.
+
+Restore a completed batch from its rollback file with:
+
+```bash
+npm run db:restore-provider-images -- --input=work/image-migrations/<rollback-file>.json
+npm run db:restore-provider-images -- --input=work/image-migrations/<rollback-file>.json --apply
+```
