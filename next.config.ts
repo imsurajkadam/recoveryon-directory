@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   agentRules: false,
   poweredByHeader: false,
   images: {
+    unoptimized: true,
     remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com", pathname: "/rehabpath/image/upload/**" }],
   },
   async redirects() {
