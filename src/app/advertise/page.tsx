@@ -3,7 +3,7 @@ import Image from "next/image";
 import { ArrowRight, BadgeCheck, BarChart3, Check, Mail, Star } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { FeaturedBadge } from "@/components/featured-badge";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { brandImageUrl, CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Advertise on TreatmentLane",
@@ -35,7 +35,7 @@ export default function AdvertisePage() {
         <div className="featured-listing-preview" aria-label="Example featured listing card">
           <FeaturedBadge />
           <div className="featured-listing-preview-image">
-            <Image src="/images/treatmentlane-featured-listing.webp" alt="Illustration of a welcoming treatment facility entrance" fill sizes="(max-width: 980px) 100vw, 45vw" priority />
+            <Image src={brandImageUrl("treatmentlane-featured-listing.webp")} alt="Illustration of a welcoming treatment facility entrance" fill sizes="(max-width: 980px) 100vw, 45vw" priority />
             <span className="visual-brand-chip"><BrandMark /></span>
             <span className="illustration-label">Illustrative example</span>
           </div>

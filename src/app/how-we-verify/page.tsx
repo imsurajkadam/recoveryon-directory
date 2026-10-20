@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { brandImageUrl } from "@/lib/site";
 
 export const metadata: Metadata = { title: "How TreatmentLane verifies listings", description: "Understand TreatmentLane's listing labels, review sources, correction process, and sponsorship policy.", alternates: { canonical: "/how-we-verify" } };
 
 export default function VerificationPage() {
-  return <><section className="page-hero visual-page-hero"><div className="shell visual-page-hero-grid"><div><span className="kicker plain">Verification methodology</span><h1>What our listing labels mean</h1><p>Verification is a documented process, not a promise that a provider is right for everyone.</p></div><div className="visual-page-hero-image"><Image src="/images/treatmentlane-verification.webp" alt="TreatmentLane verification process with source, license, and safety checks" width={1200} height={800} priority /></div></div></section><article className="content-shell prose">
+  return <><section className="page-hero visual-page-hero"><div className="shell visual-page-hero-grid"><div><span className="kicker plain">Verification methodology</span><h1>What our listing labels mean</h1><p>Verification is a documented process, not a promise that a provider is right for everyone.</p></div><div className="visual-page-hero-image"><Image src={brandImageUrl("treatmentlane-verification.webp")} alt="TreatmentLane verification process with source, license, and safety checks" width={1200} height={800} priority /></div></div></section><article className="content-shell prose">
     <h2>Directory listing</h2><p>Basic identity and contact information were collected from a provider, public record, or directory. This label does not mean every service or claim has been independently confirmed.</p>
     <h2>TreatmentLane data verified</h2><p>TreatmentLane matched the location across authoritative or independent sources, resolved material conflicts, and recorded dated evidence for required identity, contact, and licensing checks. This is a data-quality label, not a clinical endorsement.</p>
     <h2>Provider confirmed</h2><p>An authorized representative confirmed important listing details. TreatmentLane may compare the response with official websites or public records.</p>
