@@ -1,14 +1,14 @@
 import "server-only";
 
-import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
+import postgres from "postgres";
 import { removeEmDashes } from "@/lib/text";
 
-let client: NeonQueryFunction<false, false> | null | undefined;
+let client: ReturnType<typeof postgres> | null | undefined;
 
 export function getDatabase() {
   if (client !== undefined) return client;
   const url = process.env.DATABASE_URL;
-  client = url ? neon(url) : null;
+  client = url ? postgres(url, { max: 5, prepare: false, connect_timeout: 15, idle_timeout: 20 }) : null;
   return client;
 }
 

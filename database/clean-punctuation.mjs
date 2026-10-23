@@ -1,9 +1,9 @@
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
 
-const sql = neon(process.env.DATABASE_URL);
-const columns = await sql.query(
+const sql = createDatabaseClient();
+const columns = await sql.unsafe(
   `select table_name, column_name, data_type, udt_name
    from information_schema.columns
    where table_schema = 'public'
@@ -28,20 +28,21 @@ for (const column of columns) {
     statement = `update ${table} set ${field} = replace(${field}, chr(8212), '-')
       where strpos(${field}, chr(8212)) > 0`;
   }
-  const result = await sql.query(statement);
-  changedRows += Number(result.rowCount || 0);
+  const result = await sql.unsafe(statement);
+  changedRows += Number(result.count || 0);
 }
 
-const remaining = await sql.query(
+const remaining = await sql.unsafe(
   `select table_name from information_schema.tables
    where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name`,
 );
 let remainingRows = 0;
 for (const row of remaining) {
   const table = quote(row.table_name);
-  const result = await sql.query(`select count(*)::int as count from ${table} value where strpos(row_to_json(value)::text, chr(8212)) > 0`);
+  const result = await sql.unsafe(`select count(*)::int as count from ${table} value where strpos(row_to_json(value)::text, chr(8212)) > 0`);
   remainingRows += Number(result[0]?.count || 0);
 }
 
 console.log(JSON.stringify({ changedRows, remainingRows }, null, 2));
 if (remainingRows) process.exit(1);
+await sql.end();

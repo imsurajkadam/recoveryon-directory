@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 import { parse } from "csv-parse/sync";
 
 const args = new Set(process.argv.slice(2));
@@ -50,7 +50,7 @@ for (const row of recoveryRows) {
   imagesBySourceUrl.set(sourceUrl, cleanImages(row));
 }
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = createDatabaseClient();
 const affected = await sql`
   select id, name, source_url
   from providers
@@ -111,7 +111,7 @@ for (let offset = 0; offset < restorations.length; offset += batchSize) {
     featuredImageUrl: item.featuredImageUrl,
     imageUrls: item.imageUrls,
   }));
-  const result = await sql.query(`
+  const result = await sql.unsafe(`
     with restored_images as (
       select id, featured_image_url, image_urls
       from jsonb_to_recordset($1::jsonb)
@@ -126,12 +126,13 @@ for (let offset = 0; offset < restorations.length; offset += batchSize) {
       and providers.featured_image_url = $2
       and providers.image_urls = array[$2]::text[]
     returning providers.id
-  `, [JSON.stringify(batch.map((item) => ({
+  `, [batch.map((item) => ({
     id: item.id,
     featured_image_url: item.featuredImageUrl,
     image_urls: item.imageUrls,
-  }))), placeholderUrl]);
+  })), placeholderUrl]);
   restored += result.length;
 }
 
 console.log(JSON.stringify({ restoredProviders: restored, skippedAfterDryRun: restorations.length - restored }, null, 2));
+await sql.end();

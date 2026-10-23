@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 
 const args = process.argv.slice(2);
 const flags = new Set(args);
@@ -87,7 +87,7 @@ async function mapConcurrent(items, limit, task) {
   return results;
 }
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = createDatabaseClient();
 const rows = await sql`
   select id, slug, featured_image_url, image_urls
   from providers
@@ -222,7 +222,7 @@ await mapConcurrent(selected, concurrency, async (row) => {
 
     const nextFeatured = replacements.get(row.featured_image_url) || row.featured_image_url;
     const nextImages = (row.image_urls || []).map((url) => replacements.get(url) || url);
-    const result = await sql.query(`
+    const result = await sql.unsafe(`
       update providers
       set featured_image_url = $1,
           image_urls = $2::text[],
@@ -257,3 +257,4 @@ console.log(JSON.stringify({
 }, null, 2));
 
 if (failedProviders > 0) process.exitCode = 1;
+await sql.end();

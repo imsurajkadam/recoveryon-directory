@@ -13,15 +13,16 @@
     "db:listing-report": "node --env-file=.env.local database/listing-event-report.mjs",
     "db:clean-punctuation": "node --env-file=.env.local database/clean-punctuation.mjs",
     "db:migrate-provider-images:r2": "node --env-file=.env.local database/migrate-provider-images-to-r2.mjs",
+    "db:reapply-provider-images:r2": "node --env-file=.env.local database/reapply-r2-provider-images.mjs",
     "db:restore-provider-images": "node --env-file=.env.local database/restore-provider-images-from-backup.mjs",
     "check:punctuation": "node scripts/check-punctuation.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1153.0",
-    "@neondatabase/serverless": "^1.1.0",
     "lucide-react": "^1.48.0",
     "next": "16.3.6",
     "nodemailer": "^10.1.2",
+    "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",

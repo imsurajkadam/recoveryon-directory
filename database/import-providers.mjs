@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 import { parse } from "csv-parse/sync";
 import zipcodes from "zipcodes";
 
@@ -559,7 +559,7 @@ if (!commit) {
 }
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = createDatabaseClient();
 const batchSize = 120;
 const columns = [
   "name", "slug", "description", "address", "city", "state", "postal_code", "phone", "website", "categories",
@@ -579,7 +579,7 @@ for (let offset = 0; offset < providers.length; offset += batchSize) {
       provider.phone, provider.website, pgArray(provider.categories), pgArray(provider.levels), pgArray(provider.insurance),
       provider.licenseSummary, pgArray(provider.accreditation), provider.sourceUrl, provider.sourceNotes, "listed", "published", false,
       provider.sourceKey, provider.intakePhone, provider.latitude, provider.longitude,
-      JSON.stringify(provider.sourceData).replaceAll("\u2014", "-"), provider.fingerprint,
+      provider.sourceData, provider.fingerprint,
       provider.featuredImageUrl, pgArray(provider.imageUrls), pgArray(provider.treatmentTypes), pgArray(provider.therapies),
       pgArray(provider.amenities), pgArray(provider.specialties), provider.insuranceDetails, provider.priceRange,
       provider.treatmentDuration, provider.ratingValue, provider.ratingCount,
@@ -594,9 +594,10 @@ for (let offset = 0; offset < providers.length; offset += batchSize) {
     on conflict (source_key) where source_key is not null do update set
     ${updateColumns.map((column) => `${column} = excluded.${column}`).join(",")}, updated_at = now()
     where providers.verification_status = 'listed'`;
-  await sql.query(query, params);
+  await sql.unsafe(query, params);
   if (offset % 2400 === 0) console.log(`Imported ${Math.min(offset + batch.length, providers.length)} / ${providers.length}`);
 }
 
 const counts = await sql`select publication_status, verification_status, count(*)::int as count from providers group by publication_status, verification_status order by publication_status, verification_status`;
 console.log("Import complete:", counts);
+await sql.end();

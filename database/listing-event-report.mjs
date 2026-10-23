@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
 
@@ -6,7 +6,7 @@ const providerSlug = process.argv[2]?.trim();
 const days = Math.min(Math.max(Number.parseInt(process.argv[3] || "30", 10) || 30, 1), 365);
 if (!providerSlug) throw new Error("Usage: npm run db:listing-report -- <provider-slug> [days]");
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = createDatabaseClient();
 const providers = await sql`select id, name, slug from providers where slug = ${providerSlug} limit 1`;
 const provider = providers[0];
 if (!provider) throw new Error(`No provider found for slug: ${providerSlug}`);
@@ -30,3 +30,4 @@ console.table(rows.map((row) => ({
   impressions: Number(row.impressions),
   clicks: Number(row.clicks),
 })));
+await sql.end();

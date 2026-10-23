@@ -70,6 +70,7 @@ export async function POST(request: Request) {
   const sql = getDatabase();
   if (!sql) return NextResponse.json({ message: "Database unavailable" }, { status: 503 });
   const { thumbnail_base64: thumbnailBase64, ...payload } = parsed.data;
+  const databasePayload = JSON.parse(JSON.stringify(payload));
   const publicationStatus = payload.status;
   const rows = await sql`insert into content_articles
     (content_unit_id, idempotency_key, slug, title, excerpt, seo_title, meta_description,
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
     values (${payload.content_unit_id}, ${idempotencyKey}, ${payload.slug}, ${payload.title},
       ${payload.excerpt}, ${payload.seo_title}, ${payload.meta_description}, ${payload.primary_keyword},
       ${payload.secondary_keywords}, ${payload.category}, ${payload.author_name},
-      ${JSON.stringify(payload)}::jsonb, ${thumbnailBase64 || null}, ${publicationStatus},
+      ${sql.json(databasePayload)}::jsonb, ${thumbnailBase64 || null}, ${publicationStatus},
       ${payload.suggested_publish_at || null},
       ${publicationStatus === "published" ? new Date().toISOString() : null})
     on conflict (idempotency_key) do update set
@@ -120,7 +121,7 @@ export async function GET(request: Request) {
   const limit = Math.min(5, Math.max(1, Number(url.searchParams.get("limit")) || 5));
   const sql = getDatabase();
   if (!sql) return NextResponse.json({ message: "Database unavailable" }, { status: 503 });
-  const rows = await sql.query(
+  const rows = await sql.unsafe(
     `select id, content_unit_id, slug, title, status, scheduled_at, reviewed_at,
        reviewer_name, reviewer_credentials
      from content_articles

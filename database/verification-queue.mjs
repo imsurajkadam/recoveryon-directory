@@ -1,11 +1,11 @@
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
 
 const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
 const limit = Math.min(Math.max(Number.parseInt(limitArgument?.split("=")[1] || "100", 10) || 100, 1), 1000);
-const sql = neon(process.env.DATABASE_URL);
-const rows = await sql.query(
+const sql = createDatabaseClient();
+const rows = await sql.unsafe(
   `select id, name, organization_slug, location_slug, address, city, state, postal_code, phone,
       website, source_url, evidence_score, source_rating_value, source_rating_count, updated_at
    from providers
@@ -46,3 +46,4 @@ const queue = rows.map((row) => ({
 }));
 
 console.log(JSON.stringify({ generatedAt: new Date().toISOString(), requested: limit, candidates: queue.length, queue }, null, 2));
+await sql.end();

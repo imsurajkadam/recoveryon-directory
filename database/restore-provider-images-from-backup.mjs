@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { neon } from "@neondatabase/serverless";
+import { createDatabaseClient } from "./client.mjs";
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
@@ -24,10 +24,10 @@ if (!apply) {
   process.exit(0);
 }
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = createDatabaseClient();
 let restored = 0;
 for (const provider of backup.providers) {
-  const result = await sql.query(`
+  const result = await sql.unsafe(`
     update providers
     set featured_image_url = $1,
         image_urls = $2::text[],
@@ -39,3 +39,4 @@ for (const provider of backup.providers) {
 }
 
 console.log(JSON.stringify({ restoredProviders: restored }, null, 2));
+await sql.end();

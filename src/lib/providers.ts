@@ -100,8 +100,8 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
   const sort = input.sort && input.sort in orderBy ? input.sort : "recommended";
   if (!sql) return { providers: [], total: 0, page: 1, totalPages: 0 };
   const clauses = ["publication_status = 'published'"];
-  const params: unknown[] = [];
-  const add = (value: unknown) => { params.push(value); return `$${params.length}`; };
+  const params: (string | number)[] = [];
+  const add = (value: string | number) => { params.push(value); return `$${params.length}`; };
   if (input.keyword?.trim()) {
     const term = add(`%${input.keyword.trim()}%`);
     clauses.push(`(name ilike ${term} or description ilike ${term} or array_to_string(categories, ' ') ilike ${term} or array_to_string(levels_of_care, ' ') ilike ${term} or array_to_string(treatment_types, ' ') ilike ${term} or array_to_string(therapies, ' ') ilike ${term} or array_to_string(specialties, ' ') ilike ${term})`);
@@ -114,18 +114,19 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
   if (input.state?.trim()) clauses.push(`state = ${add(input.state.trim().toUpperCase())}`);
   const where = clauses.join(" and ");
   try {
-    const countRows = await sql.query(`select count(*)::int as count from providers where ${where}`, params);
+    const countRows = await sql.unsafe(`select count(*)::int as count from providers where ${where}`, params);
     const total = Number(countRows[0]?.count || 0);
     const totalPages = total ? Math.ceil(total / pageSize) : 0;
     const page = totalPages ? Math.min(requestedPage, totalPages) : 1;
-    const rows = await sql.query(
+    const rows = await sql.unsafe(
       `select ${providerColumns} from providers where ${where}
        order by ${orderBy[sort]} limit $${params.length + 1} offset $${params.length + 2}`,
       [...params, pageSize, (page - 1) * pageSize],
     );
-    return { providers: (rows as ProviderRow[]).map(toProvider), total, page, totalPages };
-  } catch {
-    return { providers: [], total: 0, page: 1, totalPages: 0 };
+    return { providers: (rows as unknown as ProviderRow[]).map(toProvider), total, page, totalPages };
+  } catch (error) {
+    console.error("Provider search failed", error);
+    throw error;
   }
 }
 
@@ -133,36 +134,36 @@ export const getProviderByLegacySlug = cache(async (slug: string): Promise<Provi
   const sql = getDatabase();
   if (!sql) return null;
   try {
-    const rows = await sql.query(`select ${providerColumns} from providers where slug = $1 and publication_status = 'published' limit 1`, [slug]);
-    return rows[0] ? toProvider(rows[0] as ProviderRow) : null;
-  } catch { return null; }
+    const rows = await sql.unsafe(`select ${providerColumns} from providers where slug = $1 and publication_status = 'published' limit 1`, [slug]);
+    return rows[0] ? toProvider(rows[0] as unknown as ProviderRow) : null;
+  } catch (error) { console.error("Legacy provider lookup failed", error); throw error; }
 });
 
 export const getProviderByCanonicalPath = cache(async (organizationSlug: string, locationSlug: string): Promise<Provider | null> => {
   const sql = getDatabase();
   if (!sql) return null;
   try {
-    const rows = await sql.query(
+    const rows = await sql.unsafe(
       `select ${providerColumns} from providers
        where organization_slug = $1 and location_slug = $2 and publication_status = 'published' limit 1`,
       [organizationSlug, locationSlug],
     );
-    return rows[0] ? toProvider(rows[0] as ProviderRow) : null;
-  } catch { return null; }
+    return rows[0] ? toProvider(rows[0] as unknown as ProviderRow) : null;
+  } catch (error) { console.error("Provider lookup failed", error); throw error; }
 });
 
 export const getProvidersByOrganizationSlug = cache(async (organizationSlug: string): Promise<Provider[]> => {
   const sql = getDatabase();
   if (!sql) return [];
   try {
-    const rows = await sql.query(
+    const rows = await sql.unsafe(
       `select ${providerColumns} from providers
        where organization_slug = $1 and publication_status = 'published'
        order by ${orderBy.recommended}`,
       [organizationSlug],
     );
-    return (rows as ProviderRow[]).map(toProvider);
-  } catch { return []; }
+    return (rows as unknown as ProviderRow[]).map(toProvider);
+  } catch (error) { console.error("Organization provider lookup failed", error); throw error; }
 });
 
 export async function hasPublishedProviders(filter: { state?: string; category?: string }) {
@@ -178,7 +179,7 @@ export async function getDirectoryFacets() {
       sql`select distinct unnest(categories) as category from providers where publication_status = 'published' order by category`,
     ]);
     return { states: stateRows.map((row) => String(row.state)), categories: categoryRows.map((row) => String(row.category)) };
-  } catch { return { states: [], categories: [] }; }
+  } catch (error) { console.error("Directory facet lookup failed", error); throw error; }
 }
 
 export async function getSitemapProviders() {
@@ -201,5 +202,5 @@ export async function getSitemapProviders() {
       organizationSlug: String(row.organization_slug), locationSlug: String(row.location_slug),
       locationCount: Number(row.organization_location_count || 1), updatedAt: String(row.updated_at),
     }));
-  } catch { return [] as Array<{ organizationSlug: string; locationSlug: string; locationCount: number; updatedAt: string }>; }
+  } catch (error) { console.error("Sitemap provider lookup failed", error); throw error; }
 }
