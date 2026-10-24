@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { ProviderCard } from "@/components/provider-card";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
 import { getLifeStanceLocationMetadata, getLifeStanceOrganizationMetadata } from "@/lib/provider-metadata";
+import { fitSeoDescription, fitSeoTitle, getOrganizationSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
 import { getProviderByLegacySlug, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -16,20 +17,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const provider = providers[0];
     const ctrMetadata = getLifeStanceLocationMetadata(provider);
     return {
-      title: ctrMetadata ? { absolute: ctrMetadata.title } : `${provider.name} in ${provider.city}, ${provider.state}`,
-      description: (ctrMetadata?.description || provider.description || `Review treatment types, services, insurance information, and contact details for ${provider.name}.`).slice(0, 157) + '...',
+      title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getProviderSeoTitle(provider) },
+      description: ctrMetadata ? fitSeoDescription(ctrMetadata.description) : getProviderSeoDescription(provider),
       alternates: { canonical: providerPath(provider) },
-      robots: { index: true, follow: true },
+      robots: { index: isProviderIndexable(provider), follow: true },
       openGraph: provider.featuredImageUrl ? { images: [{ url: provider.featuredImageUrl }] } : undefined,
     };
   }
   const name = providers[0].name;
   const ctrMetadata = getLifeStanceOrganizationMetadata(slug, providers.length);
+  const hasIndexableLocation = providers.some(isProviderIndexable);
   return {
-    title: ctrMetadata ? { absolute: ctrMetadata.title } : `${name} locations`,
-    description: ctrMetadata?.description || `View published ${name} locations, services, source details, and verification status on TreatmentLane.`,
+    title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getOrganizationSeoTitle(name) },
+    description: fitSeoDescription(ctrMetadata?.description || `View published ${name} locations, services, source details, and verification status on TreatmentLane.`),
     alternates: { canonical: `/providers/${slug}` },
-    robots: { index: true, follow: true },
+    robots: { index: hasIndexableLocation, follow: true },
   };
 }
 
@@ -44,7 +46,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
 
   return <>
     <section className="page-hero"><div className="shell">
-      <div className="breadcrumb"><Link href="/directory">Directory</Link><span>/</span><span>{providers[0].name}</span></div>
+      <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span><span>{providers[0].name}</span></div>
       <span className="kicker plain">Provider locations</span>
       <h1>{providers[0].name}</h1>
       <p>Compare {providers.length.toLocaleString()} published locations. Each location has its own services, source evidence, and verification status.</p>

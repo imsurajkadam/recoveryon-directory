@@ -23,7 +23,7 @@ export function ProviderCard({ provider }: { provider: Provider }) {
     <article className={`provider-card${provider.isSponsored ? " provider-card-featured" : ""}`}>
       <ListingImpression providerId={provider.id} />
       {provider.isSponsored && <FeaturedBadge />}
-      <Link className="provider-card-media" href={href} aria-label={`View ${provider.name}`}>
+      <Link className="provider-card-media" href={href} aria-label={`View ${provider.name}`} prefetch={false}>
         {provider.featuredImageUrl
           ? <Image src={provider.featuredImageUrl} alt={`${provider.name} facility`} fill sizes="(max-width: 760px) 100vw, 190px" />
           : <span className="provider-card-placeholder" aria-hidden="true"><Building2 /></span>}
@@ -32,10 +32,10 @@ export function ProviderCard({ provider }: { provider: Provider }) {
         <div className="provider-card-heading">
           <div className="eyebrow"><MapPin size={15} /> {provider.city}, {provider.state}</div>
           {provider.organizationLocationCount > 1
-            ? <Link className="location-count-badge" href={`/providers/${provider.organizationSlug}`} aria-label={`View all ${locationCountLabel} for ${provider.name}`}><MapPinned size={14} /> {locationCountLabel}</Link>
+            ? <Link className="location-count-badge" href={`/providers/${provider.organizationSlug}`} aria-label={`View all ${locationCountLabel} for ${provider.name}`} prefetch={false}><MapPinned size={14} /> {locationCountLabel}</Link>
             : <span className="location-count-badge"><MapPinned size={14} /> {locationCountLabel}</span>}
         </div>
-        <h2><Link href={href}>{provider.name}</Link></h2>
+        <h2><Link href={href} prefetch={false}>{provider.name}</Link></h2>
         <p>{provider.description || "View treatment types, services, contact information, and source details."}</p>
         <div className="tag-row">{tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
         <div className="provider-card-meta">

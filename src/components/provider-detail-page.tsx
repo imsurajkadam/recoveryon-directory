@@ -49,14 +49,14 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
   return <>
     <JsonLd data={jsonLd} />
     <section className="provider-hero"><div className="shell">
-      <div className="breadcrumb"><Link href="/directory">Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
+      <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`} prefetch={false}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
       <div className="provider-hero-copy">
         <div>{provider.isSponsored && <span className="kicker plain">Featured listing</span>}<h1>{provider.name}</h1><p><MapPin size={18} /> {provider.city}, {provider.state}</p></div>
         <details className="provider-hero-status verification-badge">
           <summary><BadgeCheck size={18} /> {verificationLabels[provider.verificationStatus]}</summary>
           <div className="verification-details">
             <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "The provider confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? "We verified this data against public records and source documents." : "This listing is compiled from public source data and has not yet been independently verified."}</p>
-            <p><Link href="/how-we-verify">Read our verification standards</Link></p>
+            <p><Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link></p>
           </div>
         </details>
       </div>
@@ -73,7 +73,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
     <div className="shell provider-detail-grid">
       <main className="provider-content">
-        <div className="notice"><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider. <Link href="/how-we-verify">Read our verification standards</Link>.</div>
+        <div className="notice"><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider. <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>
 
         {provider.isSponsored && <div className="featured-profile-notice"><strong>Featured profile.</strong> This organization pays a flat monthly fee for enhanced placement, a longer profile, and photos. Payment does not affect its verification status.</div>}
 
@@ -87,10 +87,10 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
               const label = `${location.city}, ${location.state}`;
               return isCurrent
                 ? <div className="provider-location-link is-current" key={location.id}><MapPin size={18} /><span><strong>{label}</strong><small>Current location</small></span></div>
-                : <Link className="provider-location-link" href={providerPath(location)} key={location.id}><MapPin size={18} /><span><strong>{label}</strong><small>View location details</small></span></Link>;
+                : <Link className="provider-location-link" href={providerPath(location)} key={location.id} prefetch={false}><MapPin size={18} /><span><strong>{label}</strong><small>View location details</small></span></Link>;
             })}
           </div>
-          <Link className="text-link provider-all-locations-link" href={`/providers/${provider.organizationSlug}`}>View all {provider.name} locations</Link>
+          <Link className="text-link provider-all-locations-link" href={`/providers/${provider.organizationSlug}`} prefetch={false}>View all {provider.name} locations</Link>
         </section>}
 
         <section className="listing-section">
@@ -141,7 +141,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>
-          <p>Represent this organization or see inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
+          <p>Represent this organization or see inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
         </section>
       </main>
 

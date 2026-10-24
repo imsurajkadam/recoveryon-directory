@@ -12,8 +12,8 @@ export function Pagination({ pathname, params = {}, page, totalPages }: {
 }) {
   if (totalPages <= 1) return null;
   return <nav className="pagination" aria-label="Directory pages">
-    {page > 1 ? <Link href={pageHref(pathname, params, page - 1)}>Previous</Link> : <span aria-disabled="true">Previous</span>}
+    {page > 1 ? <Link href={pageHref(pathname, params, page - 1)} prefetch={false}>Previous</Link> : <span aria-disabled="true">Previous</span>}
     <span>Page {page.toLocaleString()} of {totalPages.toLocaleString()}</span>
-    {page < totalPages ? <Link href={pageHref(pathname, params, page + 1)}>Next</Link> : <span aria-disabled="true">Next</span>}
+    {page < totalPages ? <Link href={pageHref(pathname, params, page + 1)} prefetch={false}>Next</Link> : <span aria-disabled="true">Next</span>}
   </nav>;
 }

@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function LocationsPage() {
-  return <><section className="page-hero"><div className="shell"><span className="kicker plain">Locations</span><h1>Browse recovery resources by state</h1><p>State pages remain out of search results until they contain useful, reviewed listings.</p></div></section><section className="section"><div className="shell all-states">{states.map((state) => <Link key={state.code} href={`/locations/${state.slug}`}>{state.name}</Link>)}</div></section></>;
+  return <><section className="page-hero"><div className="shell"><span className="kicker plain">Locations</span><h1>Browse recovery resources by state</h1><p>State pages remain out of search results until they contain useful, reviewed listings.</p></div></section><section className="section"><div className="shell all-states">{states.map((state) => <Link key={state.code} href={`/locations/${state.slug}`} prefetch={false}>{state.name}</Link>)}</div></section></>;
 }

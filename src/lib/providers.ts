@@ -2,6 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 import { getDatabase } from "@/lib/db";
+import { priorityProviderOrganizationSlugs } from "@/lib/provider-search-priority";
+import { isProviderIndexable, type ProviderSeoSignals } from "@/lib/provider-seo";
 import { brandImageUrl } from "@/lib/site";
 import type { Provider } from "@/lib/types";
 
@@ -184,9 +186,13 @@ export async function getDirectoryFacets() {
 
 export async function getSitemapProviders() {
   const sql = getDatabase();
-  if (!sql) return [] as Array<{ organizationSlug: string; locationSlug: string; locationCount: number; updatedAt: string }>;
+  type SitemapProvider = ProviderSeoSignals & Pick<Provider, "updatedAt">;
+  if (!sql) return [] as SitemapProvider[];
   try {
-    const rows = await sql`select p.organization_slug, p.location_slug, p.updated_at,
+    const rows = await sql`select p.name, p.organization_slug, p.location_slug,
+        p.description, p.address, p.city, p.state, p.phone, p.website,
+        p.categories, p.levels_of_care, p.insurance, p.treatment_types, p.therapies,
+        p.last_verified_at, p.source_url, p.updated_at, p.evidence_score, p.verification_status,
         coalesce(org_counts.cnt, 1)::int as organization_location_count
       from providers p
       left join (
@@ -197,10 +203,53 @@ export async function getSitemapProviders() {
       ) org_counts on org_counts.organization_slug = p.organization_slug
       where p.publication_status = 'published'
         and p.organization_slug is not null and p.location_slug is not null
+        and (
+          p.organization_slug in ${sql(priorityProviderOrganizationSlugs)}
+          or (
+            p.verification_status <> 'listed'
+            and p.source_url is not null
+            and p.last_verified_at is not null
+            and num_nonnulls(p.address, p.phone, p.website) >= 2
+          )
+          or (
+            p.verification_status = 'listed'
+            and p.evidence_score >= 70
+            and length(trim(coalesce(p.description, ''))) >= 160
+            and p.source_url is not null
+            and p.last_verified_at is not null
+            and num_nonnulls(p.address, p.phone, p.website) >= 2
+            and (
+              (case when cardinality(coalesce(p.categories, '{}')) > 0 then 1 else 0 end)
+              + (case when cardinality(coalesce(p.levels_of_care, '{}')) > 0 then 1 else 0 end)
+              + (case when cardinality(coalesce(p.treatment_types, '{}')) > 0 then 1 else 0 end)
+              + (case when cardinality(coalesce(p.therapies, '{}')) > 0 then 1 else 0 end)
+              + (case when cardinality(coalesce(p.insurance, '{}')) > 0 then 1 else 0 end)
+            ) >= 2
+          )
+        )
       order by p.organization_slug, p.location_slug`;
-    return rows.map((row) => ({
-      organizationSlug: String(row.organization_slug), locationSlug: String(row.location_slug),
-      locationCount: Number(row.organization_location_count || 1), updatedAt: String(row.updated_at),
-    }));
+    const providers = rows.map((row) => ({
+      name: String(row.name),
+      organizationSlug: String(row.organization_slug),
+      locationSlug: String(row.location_slug),
+      organizationLocationCount: Number(row.organization_location_count || 1),
+      city: String(row.city),
+      state: String(row.state),
+      description: row.description ? String(row.description) : null,
+      address: row.address ? String(row.address) : null,
+      phone: row.phone ? String(row.phone) : null,
+      website: row.website ? String(row.website) : null,
+      categories: Array.isArray(row.categories) ? row.categories.map(String) : [],
+      levelsOfCare: Array.isArray(row.levels_of_care) ? row.levels_of_care.map(String) : [],
+      insurance: Array.isArray(row.insurance) ? row.insurance.map(String) : [],
+      treatmentTypes: Array.isArray(row.treatment_types) ? row.treatment_types.map(String) : [],
+      therapies: Array.isArray(row.therapies) ? row.therapies.map(String) : [],
+      sourceUrl: row.source_url ? String(row.source_url) : null,
+      lastVerifiedAt: row.last_verified_at ? String(row.last_verified_at) : null,
+      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(String(row.updated_at)).toISOString(),
+      evidenceScore: Number(row.evidence_score || 0),
+      verificationStatus: String(row.verification_status) as Provider["verificationStatus"],
+    } satisfies SitemapProvider));
+    return providers.filter(isProviderIndexable);
   } catch (error) { console.error("Sitemap provider lookup failed", error); throw error; }
 }
