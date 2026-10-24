@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
 import { getLifeStanceLocationMetadata } from "@/lib/provider-metadata";
+import { fitSeoDescription, fitSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
 import { getProviderByCanonicalPath, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; location: string }> }): Promise<Metadata> {
@@ -10,10 +11,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!provider) return {};
   const ctrMetadata = getLifeStanceLocationMetadata(provider);
   return {
-    title: ctrMetadata ? { absolute: ctrMetadata.title } : `${provider.name} in ${provider.city}, ${provider.state}`,
-    description: (ctrMetadata?.description || provider.description || `Review treatment types, services, insurance information, and contact details for ${provider.name}.`).slice(0, 157) + '...',
+    title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getProviderSeoTitle(provider) },
+    description: ctrMetadata ? fitSeoDescription(ctrMetadata.description) : getProviderSeoDescription(provider),
     alternates: { canonical: providerPath(provider) },
-    robots: { index: true, follow: true },
+    robots: { index: isProviderIndexable(provider), follow: true },
     openGraph: provider.featuredImageUrl ? { images: [{ url: provider.featuredImageUrl }] } : undefined,
   };
 }
