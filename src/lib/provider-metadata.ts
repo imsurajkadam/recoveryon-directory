@@ -5,24 +5,19 @@ type ProviderMetadataCopy = {
   description: string;
 };
 
-const lifeStanceCtrLocationSlugs = new Set([
-  "lifestance-health-friendswood",
-  "lifestance-health-lansing",
-  "lifestance-health-millsboro",
-  "lifestance-health-moore",
-  "lifestance-health-newark-chapel-street",
-]);
-
 export function getLifeStanceLocationMetadata(provider: Provider): ProviderMetadataCopy | null {
-  if (!lifeStanceCtrLocationSlugs.has(provider.organizationSlug)) return null;
-  if (provider.sourceRatingValue === null || provider.sourceRatingCount === null) return null;
-
-  const rating = provider.sourceRatingValue.toFixed(1);
-  const reviews = provider.sourceRatingCount.toLocaleString("en-US");
+  const isLifeStance = provider.organizationSlug === "lifestance-health"
+    || provider.organizationSlug.startsWith("lifestance-health-")
+    || provider.name.toLowerCase().includes("lifestance");
+  if (!isLifeStance) return null;
+  const location = provider.organizationLocationCount > 1 && provider.address
+    ? `${provider.address.split(",")[0]}, ${provider.city}`
+    : provider.city;
+  const careType = provider.treatmentTypes[0] || provider.levelsOfCare[0] || "mental health services";
 
   return {
-    title: `LifeStance ${provider.city}: ${rating} from ${reviews} Reviews`,
-    description: `See ${provider.name} in ${provider.city}, ${provider.state}, rated ${rating} from ${reviews} reviews. Compare services, insurance details, and contact information.`,
+    title: `LifeStance Health in ${location}, ${provider.state}: Services`,
+    description: `Compare ${careType}, insurance information, source evidence, and contact details for ${provider.name} in ${provider.city}, ${provider.state}.`,
   };
 }
 

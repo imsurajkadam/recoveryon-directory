@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -30,6 +31,7 @@ export function CorrectionForm({ providerSlug = "" }: { providerSlug?: string })
       setMessage(result.message || "We could not submit the correction.");
       return;
     }
+    trackEvent("correction_submit");
     form.reset();
     setStatus("success");
   }

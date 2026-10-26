@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 type ListingEventType = "impression" | "click";
 
@@ -34,5 +35,5 @@ export function ListingImpression({ providerId }: { providerId: string }) {
 }
 
 export function ListingCta({ providerId, href, children }: { providerId: string; href: string; children: ReactNode }) {
-  return <Link className="provider-card-cta" href={href} prefetch={false} onClick={() => sendListingEvent(providerId, "click")}>{children}</Link>;
+  return <Link className="provider-card-cta" href={href} prefetch={false} onClick={() => { sendListingEvent(providerId, "click"); trackEvent("provider_profile_open"); }}>{children}</Link>;
 }

@@ -7,6 +7,8 @@ import { getLifeStanceLocationMetadata, getLifeStanceOrganizationMetadata } from
 import { fitSeoDescription, fitSeoTitle, getOrganizationSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
 import { getProviderByLegacySlug, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
 
+export const revalidate = 3600;
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const legacy = await getProviderByLegacySlug(slug);

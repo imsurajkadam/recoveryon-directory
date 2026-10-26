@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 interface Review {
   id: string;
@@ -48,11 +49,14 @@ export function ProviderReviews({ providerId, providerName }: { providerId: stri
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ providerId, reviewerName: form.name, reviewerRole: form.role, rating: form.rating, title: form.title, body: form.body }),
     });
-    if (res.ok) setSubmitted(true);
+    if (res.ok) {
+      trackEvent("review_submit");
+      setSubmitted(true);
+    }
   }
 
   return <section className="provider-reviews" id="reviews">
-    <h2>Reviews {reviews.length > 0 && <span className="review-count">({reviews.length})</span>}</h2>
+    <h2>TreatmentLane reviews {reviews.length > 0 && <span className="review-count">({reviews.length})</span>}</h2>
     {reviews.length > 0 ? <>
       <div className="reviews-summary"><Stars rating={Math.round(avg)} size={20} /> <strong>{avg.toFixed(1)}</strong> average from {reviews.length} review{reviews.length === 1 ? "" : "s"}</div>
       <div className="reviews-list">

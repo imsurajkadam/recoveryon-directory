@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, Phone, Star } from "lucide-react";
+import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, MapPinned, Phone, Star } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { ProviderReviews } from "@/components/provider-reviews";
+import { TrackedContactLink } from "@/components/tracked-contact-link";
 import { providerPath } from "@/lib/providers";
 import { absoluteUrl, sourceDisplayName } from "@/lib/site";
 import type { Provider } from "@/lib/types";
@@ -30,16 +31,12 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
   const sourceName = sourceDisplayName(provider.sourceUrl);
   const ratingValue = provider.sourceRatingValue;
   const ratingCount = provider.sourceRatingCount;
-  const hasSourceRating = ratingValue !== null && ratingCount !== null;
+  const mapQuery = [provider.address, provider.city, provider.state, provider.postalCode].filter(Boolean).join(", ");
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   const jsonLd = {
     "@context": "https://schema.org", "@type": "MedicalBusiness", name: provider.name,
     url: absoluteUrl(path), telephone: provider.phone || undefined,
     image: provider.featuredImageUrl || undefined,
-    aggregateRating: hasSourceRating ? {
-      "@type": "AggregateRating",
-      ratingValue,
-      reviewCount: ratingCount,
-    } : undefined,
     address: {
       "@type": "PostalAddress", streetAddress: provider.address || undefined, addressLocality: provider.city,
       addressRegion: provider.state, postalCode: provider.postalCode || undefined, addressCountry: "US",
@@ -68,7 +65,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <Image src={image} alt={`${provider.name} facility${index ? ` photo ${index + 1}` : ""}`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 65vw" : "(max-width: 760px) 50vw, 25vw"} priority={index === 0} />
         </div>)}
       </div>
-      <p className="image-attribution"><Images size={14} /> Photos come from public source data or the organization. Confirm that photos are current before making a decision.</p>
+      <p className="image-attribution"><Images size={14} /> Photos are hosted by TreatmentLane and may have been supplied by the organization. Confirm that photos are current before making a decision.</p>
     </section>}
 
     <div className="shell provider-detail-grid">
@@ -141,20 +138,22 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>
-          <p>Represent this organization or see inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
+          <p>Represent this organization? <Link href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}>Claim this listing</Link>. See inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
         </section>
       </main>
 
       <aside className="detail-sidebar provider-contact-card">
         <h2>Contact information</h2><dl>
           <dt>Location</dt><dd>{provider.address && <>{provider.address}<br /></>}{provider.city}, {provider.state} {provider.postalCode}</dd>
-          {provider.phone && <><dt>Phone</dt><dd><a href={`tel:${provider.phone}`}><Phone size={15} /> {provider.phone}</a></dd></>}
-          {provider.website && <><dt>Official website</dt><dd><a href={provider.website} rel="noopener noreferrer nofollow" target="_blank">Visit website <ExternalLink size={14} /></a></dd></>}
+          <dt>Map</dt><dd><TrackedContactLink href={mapUrl} rel="noopener noreferrer nofollow" target="_blank"><MapPinned size={15} /> View map and directions</TrackedContactLink></dd>
+          {provider.phone && <><dt>Phone</dt><dd><TrackedContactLink href={`tel:${provider.phone}`}><Phone size={15} /> {provider.phone}</TrackedContactLink></dd></>}
+          {provider.website && <><dt>Official website</dt><dd><TrackedContactLink href={provider.website} rel="noopener noreferrer nofollow" target="_blank">Visit website <ExternalLink size={14} /></TrackedContactLink></dd></>}
           {provider.sourceUrl && <><dt>Public source</dt><dd><a href={provider.sourceUrl} rel="noopener noreferrer nofollow" target="_blank">View source record <ExternalLink size={14} /></a></dd></>}
           <dt>Listing status</dt><dd><BadgeCheck size={15} /> {verificationLabels[provider.verificationStatus]}</dd>
           <dt>Last reviewed</dt><dd>{provider.lastVerifiedAt ? new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "medium" }) : "Not independently reviewed"}</dd>
         </dl>
-        {provider.phone && <a className="button provider-call-button" href={`tel:${provider.phone}`}><Phone size={17} /> Call organization</a>}
+        {provider.phone && <TrackedContactLink className="button provider-call-button" href={`tel:${provider.phone}`}><Phone size={17} /> Call organization</TrackedContactLink>}
+        <Link className="button button-secondary provider-claim-button" href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}><BadgeCheck size={17} /> Claim this listing</Link>
         <p className="form-disclaimer">TreatmentLane does not recommend or guarantee any provider. In an emergency, call 911 or 988.</p>
       </aside>
     </div>

@@ -209,6 +209,9 @@ p { color: var(--ink-soft); }
 .sponsored-label { z-index: 2; position: absolute; right: 14px; top: 13px; padding: 5px 10px; border-radius: 999px; color: white; background: var(--teal-dark); box-shadow: 0 4px 14px rgba(16,42,67,.16); font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .provider-card-cta { display: inline-flex; align-items: center; gap: 7px; margin-top: 16px; color: var(--teal-dark); font-size: .82rem; font-weight: 800; }
 .provider-card-cta:hover { text-decoration: underline; text-underline-offset: 3px; }
+.provider-card-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.provider-card-map-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; color: var(--ink-soft); font-size: .82rem; font-weight: 750; }
+.provider-card-map-link:hover { color: var(--teal-dark); }
 .empty-state { text-align: center; padding: 70px 25px; background: var(--cream); border: 1px dashed #d6d3ca; border-radius: 18px; }
 .empty-state svg { color: var(--teal); }
 .empty-state h2 { font-size: 1.55rem; margin: 18px 0 10px; }
@@ -286,6 +289,8 @@ p { color: var(--ink-soft); }
 .provider-contact-card { top: 98px; }
 .provider-contact-card h2 { font-size: 1.35rem; }
 .provider-contact-card dd a { display: inline-flex; align-items: center; gap: 6px; color: var(--teal-dark); }
+.provider-claim-button { width: 100%; justify-content: center; margin-top: 10px; }
+.state-guidance { background: var(--cream); }
 .provider-call-button { width: 100%; margin-top: 24px; }
 .featured-profile-notice { margin-top: 18px; padding: 18px 20px; border: 1px solid #b9ddd4; border-radius: 12px; color: var(--ink-soft); background: #f5fbf9; }
 

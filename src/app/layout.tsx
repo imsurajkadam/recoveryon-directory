@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { JsonLd } from "@/components/json-ld";
+import { AnalyticsPageViews } from "@/components/analytics-page-views";
 import Script from "next/script";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
@@ -43,10 +44,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${GA_MEASUREMENT_ID}');`}
+gtag('config', '${GA_MEASUREMENT_ID}', {
+  send_page_view: false,
+  allow_google_signals: false,
+  allow_ad_personalization_signals: false
+});`}
             </Script>
           </>
         )}
+        {GA_MEASUREMENT_ID && <AnalyticsPageViews />}
         <JsonLd data={organization} />
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteHeader />

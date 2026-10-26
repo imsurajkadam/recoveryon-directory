@@ -52,11 +52,11 @@ function truncateAtWord(value: string, maxLength: number) {
   return `${slice.slice(0, boundary > contentLength * 0.65 ? boundary : contentLength).trim()}...`;
 }
 
-export function getProviderSeoTitle(provider: Pick<ProviderSeoSignals, "name" | "city" | "state">) {
-  const location = `${provider.city}, ${provider.state}`;
-  const suffix = ` | ${location}`;
-  const maxNameLength = Math.max(10, 60 - suffix.length);
-  return `${truncateAtWord(provider.name.trim(), maxNameLength)}${suffix}`;
+export function getProviderSeoTitle(provider: Pick<ProviderSeoSignals, "name" | "city" | "state" | "address" | "organizationLocationCount">) {
+  const location = provider.organizationLocationCount > 1 && provider.address
+    ? `${provider.address.split(",")[0]}, ${provider.city}, ${provider.state}`
+    : `${provider.city}, ${provider.state}`;
+  return fitSeoTitle(`${provider.name}: Services in ${location}`);
 }
 
 export function getOrganizationSeoTitle(name: string) {
@@ -74,8 +74,8 @@ export function fitSeoDescription(description: string) {
 
 export function getProviderSeoDescription(provider: ProviderSeoSignals) {
   const careType = provider.treatmentTypes[0] || provider.levelsOfCare[0] || provider.categories[0];
-  const fallback = careType
-    ? `${provider.name} in ${provider.city}, ${provider.state} lists ${careType}. Review services, source details, insurance information, and contact options.`
-    : `Review services, source details, insurance information, and contact options for ${provider.name} in ${provider.city}, ${provider.state}.`;
-  return fitSeoDescription(provider.description?.trim() || fallback);
+  const insurance = provider.insurance.slice(0, 2).join(" and ");
+  const careCopy = careType ? ` lists ${careType}` : " has a published TreatmentLane profile";
+  const insuranceCopy = insurance ? ` and insurance information including ${insurance}` : "";
+  return fitSeoDescription(`${provider.name} in ${provider.city}, ${provider.state}${careCopy}${insuranceCopy}. Compare services, source evidence, and contact details.`);
 }
