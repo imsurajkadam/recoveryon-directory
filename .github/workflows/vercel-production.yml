@@ -41,9 +41,8 @@ jobs:
       - name: Pull production configuration
         run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
 
-      - name: Apply database schema
-        run: node --env-file=.vercel/.env.production.local database/migrate.mjs
-
+      # Vercel redacts sensitive database values during CI pulls. Run schema migrations
+      # separately from an authorized environment before deploying a schema change.
       - name: Build production artifacts
         run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
 

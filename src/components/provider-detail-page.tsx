@@ -97,7 +97,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
             {careTypes.length > 0 && <div><Layers3 /><span>Primary type</span><strong>{careTypes[0]}</strong></div>}
             {provider.treatmentDuration && <div><Clock3 /><span>Typical duration</span><strong>{provider.treatmentDuration}</strong></div>}
             {provider.priceRange && <div><DollarSign /><span>Source price information</span><strong>{provider.priceRange}</strong></div>}
-            {ratingValue !== null && ratingCount !== null && <div><Star /><span>{sourceName ? `${sourceName} rating` : "Source rating"}</span><strong>{ratingValue.toFixed(1)} from {ratingCount.toLocaleString()} ratings</strong></div>}
+            {ratingValue !== null && ratingCount !== null && <div><Star /><span>{sourceName ? `${sourceName} source rating` : "Source rating"}</span><strong>{ratingValue.toFixed(1)} from {ratingCount.toLocaleString()} ratings</strong></div>}
           </div>}
         </section>
 
