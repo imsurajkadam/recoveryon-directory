@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { ArrowRight, BadgeCheck, BarChart3, Check, Mail, Star } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { ContactForm } from "@/components/contact-form";
 import { FeaturedBadge } from "@/components/featured-badge";
 import { brandImageUrl, CONTACT_EMAIL } from "@/lib/site";
 
@@ -28,7 +29,7 @@ export default function AdvertisePage() {
           <h1>Help more families understand what your organization offers</h1>
           <p>Featured listings give treatment and recovery organizations stronger visibility while keeping sponsorship separate from TreatmentLane verification.</p>
           <div className="inline-actions">
-            <a className="button" href={`mailto:${CONTACT_EMAIL}`}><Mail size={17} /> Become a founding partner</a>
+            <a className="button" href="#inquiry"><Mail size={17} /> Become a founding partner</a>
             <a className="button button-secondary" href="#pricing">View pricing</a>
           </div>
         </div>
@@ -76,7 +77,12 @@ export default function AdvertisePage() {
       <p>The founding offer is available to the first 20 accepted partners. It includes three free months, followed by 12 months at $99 per month. After the founding group is filled, standard featured listing pricing is $199 per month.</p>
       <p><strong>All pricing is a flat monthly fee.</strong> There are no per-call, per-lead, or per-admission fees. Payment is for advertising placement and enhanced profile presentation only. It does not guarantee calls, leads, admissions, clinical suitability, or a particular result.</p>
       <p>Organizations remain responsible for the accuracy of information they provide and for compliance with applicable laws, regulations, and professional obligations. TreatmentLane may decline or remove a featured listing that does not meet its publishing standards.</p>
-      <a className="button" href={`mailto:${CONTACT_EMAIL}`}><Mail size={17} /> Contact {CONTACT_EMAIL}</a>
+      <a className="button" href="#inquiry"><Mail size={17} /> Send an inquiry</a>
+    </div></section>
+    <section className="form-section" id="inquiry"><div className="content-shell">
+      <span className="kicker plain">Partner inquiry</span><h2>Tell us about your organization</h2><p>Send a short note about the organization and the locations you want to feature. Do not include patient information.</p>
+      <ContactForm topic="partnership" topicLocked />
+      <p className="form-disclaimer">Prefer email? Contact <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</p>
     </div></section>
   </>;
 }

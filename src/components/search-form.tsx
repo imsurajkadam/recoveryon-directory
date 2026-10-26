@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, MapPin, Search } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 export function SearchForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
@@ -11,6 +12,7 @@ export function SearchForm({ compact = false }: { compact?: boolean }) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    trackEvent("directory_search");
     const query = new URLSearchParams();
     if (keyword.trim()) query.set("keyword", keyword.trim());
     if (location.trim()) query.set("location", location.trim());

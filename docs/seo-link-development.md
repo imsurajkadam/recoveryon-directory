@@ -44,3 +44,33 @@ Start with 25 providers from the 250-page Search Console priority cohort that ha
 - Spam score and relevance of each new domain
 
 Outreach messages are external communications. Prepare each message and target first, then obtain final approval before sending.
+
+## Claim verification checklist
+
+Before changing a listing to `provider-confirmed`:
+
+1. Confirm the requester used an organization-domain email or call the phone number on the official site.
+2. Match the organization name, address, and website to the exact TreatmentLane listing.
+3. Record the verifier, evidence source, and verification date.
+4. Review requested copy for unsupported clinical, outcome, insurance, price, or licensing claims.
+5. Keep third-party source ratings separate from TreatmentLane reviews.
+6. Publish only the fields supported by the evidence reviewed.
+
+## Provider link request template
+
+Subject: Please review your TreatmentLane listing
+
+Hello [name],
+
+TreatmentLane has a public directory profile for [organization and location]: [listing URL]. We would appreciate your help checking the address, services, insurance information, and contact details.
+
+If you are authorized to represent this location, you can claim or correct the listing here: [claim URL]. There is no charge to correct or confirm factual information.
+
+Once the profile is accurate, you may link to it from your location, resources, or press page if it helps your visitors compare care information. A link is optional and does not affect verification status or placement.
+
+Thank you,
+TreatmentLane
+
+## Outreach tracker fields
+
+Use one row per target with: organization, domain, contact name, role, contact source, exact TreatmentLane destination, reason the link helps readers, profile verification status, first-contact date, follow-up date, reply, live-link URL, 30-day check, and 90-day check.

@@ -41,6 +41,13 @@ const hash = (value) => createHash("sha256").update(value).digest("hex");
 const unique = (values) => [...new Set(values.filter(Boolean))];
 const pgArray = (values) => `{${values.map((value) => `"${String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`).join(",")}}`;
 
+function streetAddress(value, city, state, postalCode) {
+  let address = clean(value).replace(/,?\s*(?:United States|USA)\s*$/i, "").trim();
+  const parts = [city, state, postalCode].filter(Boolean).map((part) => String(part).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (parts.length >= 2) address = address.replace(new RegExp(`,?\\s*${parts.join("(?:,|\\s)+")}\\s*$`, "i"), "").replace(/,\s*$/, "").trim();
+  return address;
+}
+
 function slugify(value) {
   return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 92) || "provider";
@@ -135,7 +142,7 @@ function recoveryInsurance(row) {
 
 function usefulInsuranceDetails(row) {
   const text = clean(row.insurance);
-  if (!text || /admissions team will work with you to explore|please (?:call|contact).*insurance|we accept insurance\.?$/i.test(text)) return null;
+  if (!text || /admissions team will work with you to explore|please (?:call|contact).*insurance|we accept insurance\.?$|fill out|our secure form|contact us|call us|we will|we'll/i.test(text)) return null;
   return recoveryInsurance(row).length ? text : null;
 }
 
@@ -162,7 +169,7 @@ function cleanImages(row) {
   const used = new Set();
   const images = [];
   for (const candidate of candidates) {
-    if (!candidate.startsWith("https://res.cloudinary.com/rehabpath/image/upload/")) continue;
+    if (!candidate.startsWith("https://images.treatmentlane.com/")) continue;
     if (/\.svg(?:\?|$)|h_48,w_48|e_trim:10/i.test(candidate)) continue;
     const assetKey = candidate.split("?")[0].split("/").at(-1)?.replace(/\.[^.]+$/, "");
     if (!assetKey || used.has(assetKey)) continue;
@@ -445,7 +452,7 @@ for (const [identity, items] of groups) {
   const sourceData = { masterRows: rawRows, ...(rawRecoveryRow ? { recoveryRow: rawRecoveryRow } : {}) };
   const fingerprint = hash(JSON.stringify(sourceData));
   providers.push({
-    sourceKey, name: first.name, slug, description, address: first.address || null, city: first.city, state: first.state,
+    sourceKey, name: first.name, slug, description, address: streetAddress(first.address, first.city, first.state, first.postalCode) || null, city: first.city, state: first.state,
     postalCode: first.postalCode || null, phone: clean(row["Phone E164"] || row.Phone) || null, website: null,
     categories, levels, insurance, treatmentTypes, therapies, amenities, specialties,
     featuredImageUrl: details.images[0] || null, imageUrls: details.images, insuranceDetails: details.insuranceDetails,
@@ -499,7 +506,7 @@ for (let index = 0; index < supplementalCandidates.length; index += 1) {
   providers.push({
     sourceKey, name, slug,
     description: publicDescription(name, location.city, location.state, treatmentTypes, levels, therapies),
-    address: location.address || null, city: location.city, state: location.state, postalCode: location.postalCode || null,
+    address: streetAddress(location.address, location.city, location.state, location.postalCode) || null, city: location.city, state: location.state, postalCode: location.postalCode || null,
     phone, website: null, categories: recoveryCategories(row), levels, insurance: details.insurance,
     treatmentTypes, therapies, amenities: details.amenities, specialties: specialtiesFor(null, row),
     featuredImageUrl: details.images[0] || null, imageUrls: details.images, insuranceDetails: details.insuranceDetails,

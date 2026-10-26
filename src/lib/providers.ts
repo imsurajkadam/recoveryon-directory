@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { getDatabase } from "@/lib/db";
 import { priorityProviderOrganizationSlugs } from "@/lib/provider-search-priority";
@@ -35,25 +36,48 @@ const listingPlaceholderUrl = brandImageUrl("treatmentlane-listing-placeholder.w
 
 function normalizeProviderImageUrl(value: string | null) {
   if (!value) return null;
+  if (value.startsWith("/")) return value;
   try {
     const url = new URL(value);
     if ((url.hostname === "treatmentlane.com" || url.hostname === "www.treatmentlane.com") && url.pathname === listingPlaceholderPath) {
       return listingPlaceholderUrl;
     }
+    if (url.hostname === "images.treatmentlane.com") return url.toString();
   } catch {
-    return value;
+    return null;
   }
-  return value;
+  return null;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function normalizeStreetAddress(address: string | null, city: string, state: string, postalCode: string | null) {
+  if (!address) return null;
+  let value = address.trim().replace(/,?\s*(?:United States|USA)\s*$/i, "").trim();
+  const locationParts = [city, state, postalCode].filter(Boolean).map((part) => escapeRegExp(String(part)));
+  if (locationParts.length >= 2) {
+    const suffix = new RegExp(`,?\\s*${locationParts.join("(?:,|\\s)+")}\\s*$`, "i");
+    value = value.replace(suffix, "").replace(/,\s*$/, "").trim();
+  }
+  return value || null;
+}
+
+function cleanSourceDetail(value: string | null) {
+  if (!value) return null;
+  const copiedCallToAction = /\b(fill out|submit (?:the|our)|contact us|call us|reach out|our admissions|our secure form|we will|we'll|your information is private)\b/i;
+  return copiedCallToAction.test(value) ? null : value;
 }
 
 function toProvider(row: ProviderRow): Provider {
   return {
     id: row.id, name: row.name, slug: row.slug, organizationSlug: row.organization_slug, locationSlug: row.location_slug,
     organizationLocationCount: Number(row.organization_location_count || 1),
-    description: row.description, address: row.address,
+    description: row.description, address: normalizeStreetAddress(row.address, row.city, row.state, row.postal_code),
     city: row.city, state: row.state, postalCode: row.postal_code, phone: row.phone, website: row.website,
     categories: row.categories || [], levelsOfCare: row.levels_of_care || [], insurance: row.insurance || [],
-    insuranceDetails: row.insurance_details, treatmentTypes: row.treatment_types || [], therapies: row.therapies || [],
+    insuranceDetails: cleanSourceDetail(row.insurance_details), treatmentTypes: row.treatment_types || [], therapies: row.therapies || [],
     amenities: row.amenities || [], specialties: row.specialties || [], featuredImageUrl: normalizeProviderImageUrl(row.featured_image_url),
     imageUrls: (row.image_urls || []).map((image) => normalizeProviderImageUrl(image)).filter((image): image is string => Boolean(image)), priceRange: row.price_range, treatmentDuration: row.treatment_duration,
     sourceRatingValue: row.source_rating_value === null ? null : Number(row.source_rating_value), sourceRatingCount: row.source_rating_count,
@@ -66,7 +90,8 @@ function toProvider(row: ProviderRow): Provider {
 export type ProviderSort = "recommended" | "recently-verified" | "most-reviewed" | "highest-rated" | "alphabetical";
 
 export type ProviderSearch = {
-  keyword?: string; location?: string; category?: string; state?: string; sort?: ProviderSort; page?: number; pageSize?: number;
+  keyword?: string; location?: string; category?: string; state?: string; insurance?: string; level?: string; specialty?: string;
+  sort?: ProviderSort; page?: number; pageSize?: number;
 };
 export type ProviderSearchResult = { providers: Provider[]; total: number; page: number; totalPages: number };
 
@@ -114,6 +139,12 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
   }
   if (input.category?.trim()) clauses.push(`${add(input.category.trim())} = any(categories)`);
   if (input.state?.trim()) clauses.push(`state = ${add(input.state.trim().toUpperCase())}`);
+  if (input.insurance?.trim()) clauses.push(`${add(input.insurance.trim())} = any(insurance)`);
+  if (input.level?.trim()) {
+    const level = add(input.level.trim());
+    clauses.push(`(${level} = any(levels_of_care) or ${level} = any(treatment_types))`);
+  }
+  if (input.specialty?.trim()) clauses.push(`${add(input.specialty.trim())} = any(specialties)`);
   const where = clauses.join(" and ");
   try {
     const countRows = await sql.unsafe(`select count(*)::int as count from providers where ${where}`, params);
@@ -132,16 +163,17 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
   }
 }
 
-export const getProviderByLegacySlug = cache(async (slug: string): Promise<Provider | null> => {
+const getProviderByLegacySlugCached = unstable_cache(async (slug: string): Promise<Provider | null> => {
   const sql = getDatabase();
   if (!sql) return null;
   try {
     const rows = await sql.unsafe(`select ${providerColumns} from providers where slug = $1 and publication_status = 'published' limit 1`, [slug]);
     return rows[0] ? toProvider(rows[0] as unknown as ProviderRow) : null;
   } catch (error) { console.error("Legacy provider lookup failed", error); throw error; }
-});
+}, ["provider-by-legacy-slug"], { revalidate: 3600, tags: ["providers"] });
+export const getProviderByLegacySlug = cache(getProviderByLegacySlugCached);
 
-export const getProviderByCanonicalPath = cache(async (organizationSlug: string, locationSlug: string): Promise<Provider | null> => {
+const getProviderByCanonicalPathCached = unstable_cache(async (organizationSlug: string, locationSlug: string): Promise<Provider | null> => {
   const sql = getDatabase();
   if (!sql) return null;
   try {
@@ -152,9 +184,10 @@ export const getProviderByCanonicalPath = cache(async (organizationSlug: string,
     );
     return rows[0] ? toProvider(rows[0] as unknown as ProviderRow) : null;
   } catch (error) { console.error("Provider lookup failed", error); throw error; }
-});
+}, ["provider-by-canonical-path"], { revalidate: 3600, tags: ["providers"] });
+export const getProviderByCanonicalPath = cache(getProviderByCanonicalPathCached);
 
-export const getProvidersByOrganizationSlug = cache(async (organizationSlug: string): Promise<Provider[]> => {
+const getProvidersByOrganizationSlugCached = unstable_cache(async (organizationSlug: string): Promise<Provider[]> => {
   const sql = getDatabase();
   if (!sql) return [];
   try {
@@ -166,23 +199,35 @@ export const getProvidersByOrganizationSlug = cache(async (organizationSlug: str
     );
     return (rows as unknown as ProviderRow[]).map(toProvider);
   } catch (error) { console.error("Organization provider lookup failed", error); throw error; }
-});
+}, ["providers-by-organization-slug"], { revalidate: 3600, tags: ["providers"] });
+export const getProvidersByOrganizationSlug = cache(getProvidersByOrganizationSlugCached);
 
 export async function hasPublishedProviders(filter: { state?: string; category?: string }) {
   return (await searchProviders({ ...filter, pageSize: 1 })).total > 0;
 }
 
-export async function getDirectoryFacets() {
+const getDirectoryFacetsCached = unstable_cache(async () => {
   const sql = getDatabase();
-  if (!sql) return { states: [] as string[], categories: [] as string[] };
+  const empty = { states: [] as string[], categories: [] as string[], insurance: [] as string[], levels: [] as string[], specialties: [] as string[] };
+  if (!sql) return empty;
   try {
-    const [stateRows, categoryRows] = await Promise.all([
+    const [stateRows, categoryRows, insuranceRows, levelRows, specialtyRows] = await Promise.all([
       sql`select distinct state from providers where publication_status = 'published' order by state`,
       sql`select distinct unnest(categories) as category from providers where publication_status = 'published' order by category`,
+      sql`select value from providers cross join lateral unnest(insurance) value where publication_status = 'published' group by value order by count(*) desc, value limit 40`,
+      sql`select value from providers cross join lateral unnest(coalesce(levels_of_care, '{}') || coalesce(treatment_types, '{}')) value where publication_status = 'published' group by value order by count(*) desc, value limit 40`,
+      sql`select value from providers cross join lateral unnest(specialties) value where publication_status = 'published' group by value order by count(*) desc, value limit 40`,
     ]);
-    return { states: stateRows.map((row) => String(row.state)), categories: categoryRows.map((row) => String(row.category)) };
+    return {
+      states: stateRows.map((row) => String(row.state)),
+      categories: categoryRows.map((row) => String(row.category)),
+      insurance: insuranceRows.map((row) => String(row.value)),
+      levels: levelRows.map((row) => String(row.value)),
+      specialties: specialtyRows.map((row) => String(row.value)),
+    };
   } catch (error) { console.error("Directory facet lookup failed", error); throw error; }
-}
+}, ["directory-facets"], { revalidate: 3600, tags: ["providers"] });
+export const getDirectoryFacets = cache(getDirectoryFacetsCached);
 
 export async function getSitemapProviders() {
   const sql = getDatabase();

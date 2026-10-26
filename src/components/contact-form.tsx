@@ -2,10 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-export function ContactForm() {
+export function ContactForm({ topic = "", topicLocked = false }: { topic?: string; topicLocked?: boolean }) {
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -30,6 +31,7 @@ export function ContactForm() {
       setMessage(result.message || "We could not submit your message.");
       return;
     }
+    trackEvent(topic === "partnership" ? "advertiser_inquiry_submit" : "contact_submit");
     form.reset();
     setStatus("success");
   }
@@ -41,7 +43,7 @@ export function ContactForm() {
     <div className="form-grid">
       <label><span className="field-label">Your name <span className="required-mark" aria-hidden="true">*</span></span><input name="name" required maxLength={120} /></label>
       <label><span className="field-label">Email <span className="required-mark" aria-hidden="true">*</span></span><input name="email" type="email" required maxLength={200} /></label>
-      <label className="full-field"><span className="field-label">Topic <span className="required-mark" aria-hidden="true">*</span></span><select name="topic" required defaultValue=""><option value="" disabled>Select one</option><option value="general">General question</option><option value="provider">Provider listing</option><option value="partnership">Partnership or media</option><option value="privacy">Privacy request</option><option value="other">Other</option></select></label>
+      {topicLocked ? <input type="hidden" name="topic" value={topic} /> : <label className="full-field"><span className="field-label">Topic <span className="required-mark" aria-hidden="true">*</span></span><select name="topic" required defaultValue={topic}><option value="" disabled>Select one</option><option value="general">General question</option><option value="provider">Provider listing</option><option value="partnership">Partnership or media</option><option value="privacy">Privacy request</option><option value="other">Other</option></select></label>}
       <label className="full-field"><span className="field-label">Message <span className="required-mark" aria-hidden="true">*</span></span><textarea name="message" required rows={6} maxLength={3000} /></label>
       <label className="honeypot" aria-hidden="true">Leave this empty<input name="companyFax" tabIndex={-1} autoComplete="off" /></label>
     </div>
