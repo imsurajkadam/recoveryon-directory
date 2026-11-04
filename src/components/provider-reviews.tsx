@@ -29,6 +29,7 @@ function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
 
 export function ProviderReviews({ providerId, providerName }: { providerId: string; providerName: string }) {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", role: "former_client", rating: 5, title: "", body: "" });
@@ -37,7 +38,8 @@ export function ProviderReviews({ providerId, providerName }: { providerId: stri
     fetch(`/api/reviews?providerId=${providerId}`)
       .then((r) => r.json())
       .then((d) => setReviews(d.reviews || []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, [providerId]);
 
   const avg = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) : 0;
@@ -67,7 +69,7 @@ export function ProviderReviews({ providerId, providerName }: { providerId: stri
           <p className="review-meta">{r.reviewer_name} &middot; {new Date(r.created_at).toLocaleDateString()}</p>
         </article>)}
       </div>
-    </> : <p>No reviews yet. Were you a client at {providerName}? Share your experience to help others.</p>}
+    </> : loaded ? <p>No reviews yet. Were you a client at {providerName}? Share your experience to help others.</p> : null}
     
     {!showForm && !submitted && <button className="button" onClick={() => setShowForm(true)}>Write a review</button>}
     {submitted && <div className="notice">Thank you. Your review was submitted and will appear after moderation.</div>}

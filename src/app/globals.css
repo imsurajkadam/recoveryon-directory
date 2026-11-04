@@ -184,10 +184,14 @@ p { color: var(--ink-soft); }
 .results-heading h1 { font-size: 2.25rem; margin-bottom: 6px; }
 .results-heading p { margin: 0; }
 .provider-list { display: grid; gap: 15px; }
-.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 30px; }
+.pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+.pagination ol { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; list-style: none; margin: 0; padding: 0; }
 .pagination a, .pagination span { border: 1px solid var(--line); border-radius: 999px; padding: 9px 15px; background: var(--surface); }
 .pagination a { color: var(--ink); font-weight: 700; text-decoration: none; }
+.pagination a[aria-current="page"] { color: white; background: var(--teal); border-color: var(--teal); }
 .pagination span[aria-disabled="true"] { opacity: .45; }
+.hub-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; font-weight: 800; }
+.hub-links a { color: var(--teal-dark); }
 .provider-card { position: relative; display: grid; grid-template-columns: 190px 1fr; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: white; box-shadow: 0 8px 25px rgba(16,42,67,.035); }
 .provider-card-featured { border-color: #9ccfc4; box-shadow: 0 12px 34px rgba(36,127,134,.12); }
 .provider-card-media { position: relative; min-height: 205px; overflow: hidden; background: linear-gradient(145deg, #eaf7f4, #f3f7f8); }
@@ -235,6 +239,9 @@ p { color: var(--ink-soft); }
 .all-states { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .all-states a { padding: 12px 14px; border-radius: 9px; border: 1px solid var(--line); font-size: .84rem; font-weight: 700; }
 .all-states a:hover { color: var(--teal-dark); background: var(--aqua); }
+.city-index { margin-top: 48px; }
+.city-index h2 { margin-bottom: 18px; }
+.city-index .all-states span { color: var(--ink-soft); font-weight: 700; }
 .detail-grid { display: grid; grid-template-columns: 1fr 330px; gap: 44px; padding: 62px 0; }
 .detail-sidebar { align-self: start; position: sticky; top: 100px; padding: 24px; border: 1px solid var(--line); border-radius: 16px; }
 .detail-sidebar dl { margin: 0; }

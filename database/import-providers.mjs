@@ -222,11 +222,16 @@ function detailsFromRecovery(row) {
   };
 }
 
+function indefiniteArticle(phrase) {
+  return /^[aeiou]/i.test(phrase.trim()) ? "an" : "a";
+}
+
 function publicDescription(name, city, state, treatmentTypes, levels, therapies) {
   const typeText = treatmentTypes.slice(0, 2).join(" and ").toLowerCase();
   const levelText = levels.slice(0, 3).join(", ").toLowerCase();
   const therapyText = therapies.slice(0, 2).join(" and ").toLowerCase();
-  return `${name} is listed in ${city}, ${state}${typeText ? ` as a ${typeText} resource` : " as a behavioral health, treatment, or recovery resource"}.` +
+  const typePhrase = typeText || "behavioral health, treatment, or recovery";
+  return `${name} is listed in ${city}, ${state} as ${indefiniteArticle(typePhrase)} ${typePhrase} resource.` +
     `${levelText ? ` Source data includes ${levelText}.` : ""}${therapyText ? ` Mentioned approaches include ${therapyText}.` : ""}` +
     " Contact the organization directly to confirm current services, eligibility, availability, cost, and licensing.";
 }

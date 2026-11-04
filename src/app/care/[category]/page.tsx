@@ -9,21 +9,25 @@ import { ProviderCard } from "@/components/provider-card";
 import { careCategories } from "@/lib/content";
 import { careEditorial } from "@/lib/care-editorial";
 import { EDITORIAL_REVIEWED_ON, editorialAuthor, editorialSources } from "@/lib/editorial-trust";
-import { hasPublishedProviders, providerPath, searchProviders } from "@/lib/providers";
+import { listingRobots } from "@/lib/listing-robots";
+import { clampMetaDescription } from "@/lib/provider-display";
+import { providerPath, searchProviders } from "@/lib/providers";
 import { absoluteUrl } from "@/lib/site";
 
 export function generateStaticParams() { return careCategories.map((category) => ({ category: category.slug })); }
 
-export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ category: string }>; searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
   const { category: slug } = await params;
+  const query = await searchParams;
   const category = careCategories.find((item) => item.slug === slug);
   if (!category) return {};
-  const hasListings = await hasPublishedProviders({ category: category.name });
+  const robots = listingRobots(query, `/care/${category.slug}`);
+  const page = Math.max(Number.parseInt(query.page || "1", 10) || 1, 1);
   return {
-    title: `${category.name}: compare options`,
-    description: `${category.description} Compare providers, verify licensing, and find the right fit on TreatmentLane.`,
-    alternates: { canonical: `/care/${category.slug}` },
-    robots: { index: hasListings, follow: true },
+    title: page > 1 ? `${category.name}: compare options, page ${page}` : `${category.name}: compare options`,
+    description: clampMetaDescription(`${category.description} Compare providers, verify licensing, and find the right fit on TreatmentLane.`),
+    alternates: { canonical: robots.canonical },
+    robots: { index: robots.index, follow: true },
   };
 }
 
@@ -34,6 +38,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const editorial = careEditorial[slug];
   const query = await searchParams;
   const result = await searchProviders({ category: category.name, page: Math.max(Number.parseInt(query.page || "1", 10) || 1, 1) });
+  if (result.outOfRange) notFound();
   const itemListJsonLd = result.providers.length ? {
     "@context": "https://schema.org",
     "@type": "ItemList",

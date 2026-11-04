@@ -3,7 +3,12 @@ import Image from "next/image";
 import { ProviderApplicationForm } from "@/components/provider-application-form";
 import { brandImageUrl } from "@/lib/site";
 
-export const metadata: Metadata = { title: "List or claim your organization", description: "Submit a treatment, recovery, or behavioral health organization for TreatmentLane review.", alternates: { canonical: "/providers/apply" } };
+export const metadata: Metadata = {
+  title: "List or claim your organization",
+  description: "Submit a treatment, recovery, or behavioral health organization for TreatmentLane review.",
+  alternates: { canonical: "/providers/apply" },
+  robots: { index: false, follow: true },
+};
 
 export default async function ApplyPage({ searchParams }: { searchParams: Promise<{ provider?: string }> }) {
   const { provider = "" } = await searchParams;

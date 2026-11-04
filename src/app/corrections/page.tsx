@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Request a listing correction",
   description: "Tell TreatmentLane about inaccurate or outdated information in a directory listing.",
   alternates: { canonical: "/corrections" },
+  robots: { index: false, follow: true },
 };
 
 export default async function CorrectionsPage({ searchParams }: { searchParams: Promise<{ provider?: string }> }) {

@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/json-ld";
 import { getPublishedArticleBySlug, type ArticleBlock, type ArticleSource } from "@/lib/articles";
 import { guides } from "@/lib/content";
+import { editorialAuthor, guideAuthorEntity, guideByline, guideReviewerEntity } from "@/lib/editorial-trust";
+import { clampMetaDescription } from "@/lib/provider-display";
 import { absoluteUrl } from "@/lib/site";
 
 export function generateStaticParams() { return guides.map((guide) => ({ slug: guide.slug })); }
@@ -14,13 +16,16 @@ export const dynamicParams = true;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const guide = guides.find((item) => item.slug === slug);
-  if (guide) return { title: guide.title, description: guide.description, alternates: { canonical: `/guides/${guide.slug}` }, openGraph: { type: "article", title: guide.title, description: guide.description } };
+  if (guide) {
+    const description = clampMetaDescription(guide.description);
+    return { title: guide.title, description, alternates: { canonical: `/guides/${guide.slug}` }, openGraph: { type: "article", title: guide.title, description } };
+  }
   const article = await getPublishedArticleBySlug(slug);
   if (!article) return {};
   const image = article.hasThumbnail ? absoluteUrl(`/api/content/articles/${article.id}/thumbnail`) : undefined;
   return {
     title: article.seoTitle,
-    description: article.metaDescription,
+    description: clampMetaDescription(article.metaDescription),
     alternates: { canonical: `/guides/${article.slug}` },
     openGraph: { type: "article", title: article.title, description: article.excerpt, publishedTime: article.publishedAt, modifiedTime: article.updatedAt, images: image ? [image] : undefined },
   };
@@ -45,8 +50,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const guide = guides.find((item) => item.slug === slug);
   if (guide) {
-    const jsonLd = { "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.description, dateModified: guide.reviewedOn, author: { "@type": "Organization", name: "TreatmentLane" }, mainEntityOfPage: absoluteUrl(`/guides/${guide.slug}`) };
-    return <><JsonLd data={jsonLd} /><section className="page-hero"><div className="shell"><div className="breadcrumb"><Link href="/guides" prefetch={false}>Guides</Link><span>/</span><span>{guide.title}</span></div><span className="kicker plain">Reviewed {new Date(guide.reviewedOn).toLocaleDateString("en-US", { dateStyle: "long" })}</span><h1>{guide.title}</h1><p>{guide.description}</p></div></section><article className="content-shell prose"><div className="notice">Educational information only. Individual circumstances differ, and this guide does not provide medical, legal, or insurance advice.</div>{guide.sections.map((section) => <section key={section.heading}><h2>{section.heading}</h2><p>{section.body}</p></section>)}<h2>Sources and further help</h2><ul>{guide.sources.map((source) => <li key={source.href}><a href={source.href} target="_blank" rel="noopener noreferrer">{source.label}</a></li>)}</ul></article></>;
+    const reviewer = guideReviewerEntity();
+    const jsonLd = { "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.description, dateModified: guide.reviewedOn, author: guideAuthorEntity(), ...(reviewer ? { reviewedBy: reviewer } : {}), mainEntityOfPage: absoluteUrl(`/guides/${guide.slug}`) };
+    return <><JsonLd data={jsonLd} /><section className="page-hero"><div className="shell"><div className="breadcrumb"><Link href="/guides" prefetch={false}>Guides</Link><span>/</span><span>{guide.title}</span></div><span className="kicker plain">Reviewed {new Date(guide.reviewedOn).toLocaleDateString("en-US", { dateStyle: "long" })}</span><h1>{guide.title}</h1><p>{guide.description}</p><p className="article-byline">{guideByline()}</p></div></section><article className="content-shell prose"><div className="notice">Educational information only. Individual circumstances differ, and this guide does not provide medical, legal, or insurance advice.</div>{guide.sections.map((section) => <section key={section.heading}><h2>{section.heading}</h2><p>{section.body}</p></section>)}<h2>Sources and further help</h2><ul>{guide.sources.map((source) => <li key={source.href}><a href={source.href} target="_blank" rel="noopener noreferrer">{source.label}</a></li>)}</ul></article></>;
   }
 
   const article = await getPublishedArticleBySlug(slug);
@@ -58,8 +64,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     description: article.excerpt,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
-    author: { "@type": "Organization", name: article.authorName },
-    ...(article.reviewerName ? { reviewedBy: { "@type": "Person", name: article.reviewerName, honorificSuffix: article.reviewerCredentials || undefined } } : {}),
+    author: guideAuthorEntity(article.authorName),
+    ...(article.reviewerName && article.reviewerName !== editorialAuthor.name ? { reviewedBy: guideReviewerEntity(article.reviewerName, article.reviewerCredentials) } : {}),
     mainEntityOfPage: absoluteUrl(`/guides/${article.slug}`),
     image: article.hasThumbnail ? absoluteUrl(`/api/content/articles/${article.id}/thumbnail`) : undefined,
   };

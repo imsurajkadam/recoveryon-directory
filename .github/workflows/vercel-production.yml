@@ -32,5 +32,8 @@ jobs:
       - name: Install project dependencies
         run: npm ci
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Verify production build
         run: npm run build

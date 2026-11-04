@@ -179,6 +179,25 @@ create unique index if not exists providers_canonical_path_unique
 create index if not exists providers_recommended_order_idx
   on providers(verification_status, evidence_score desc, source_rating_count desc)
   where publication_status = 'published';
+create index if not exists providers_published_state_city_idx
+  on providers(state, city)
+  where publication_status = 'published';
+create index if not exists providers_published_state_updated_idx
+  on providers(state, updated_at desc)
+  where publication_status = 'published';
+create index if not exists providers_published_organization_idx
+  on providers(organization_slug)
+  where publication_status = 'published';
+create index if not exists providers_published_directory_order_idx
+  on providers (
+    is_sponsored desc,
+    evidence_score desc,
+    source_rating_count desc nulls last,
+    name,
+    city,
+    id
+  )
+  where publication_status = 'published';
 create index if not exists provider_source_records_provider_idx on provider_source_records(provider_id, source_type);
 create index if not exists provider_verification_checks_provider_idx on provider_verification_checks(provider_id, checked_at desc);
 create index if not exists provider_submissions_created_idx on provider_submissions(created_at desc);
