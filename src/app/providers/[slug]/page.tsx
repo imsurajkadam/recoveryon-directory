@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { ProviderCard } from "@/components/provider-card";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
-import { getLifeStanceLocationMetadata, getLifeStanceOrganizationMetadata } from "@/lib/provider-metadata";
-import { fitSeoDescription, fitSeoTitle, getOrganizationSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
-import { getProviderByLegacySlug, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
+import { getOrganizationSeoDescription, getOrganizationSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
+import { providerDisplayName } from "@/lib/provider-display";
+import { getNearbyProviders, getProviderByLegacySlug, getProvidersByOrganizationSlug, providerPath, resolveProviderListing } from "@/lib/providers";
+import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
 
@@ -17,23 +19,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!providers.length) return {};
   if (providers.length === 1) {
     const provider = providers[0];
-    const ctrMetadata = getLifeStanceLocationMetadata(provider);
+    const resolution = await resolveProviderListing(provider);
+    if (resolution.redirectTo) permanentRedirect(resolution.redirectTo);
     return {
-      title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getProviderSeoTitle(provider) },
-      description: ctrMetadata ? fitSeoDescription(ctrMetadata.description) : getProviderSeoDescription(provider),
+      title: getProviderSeoTitle(provider),
+      description: getProviderSeoDescription(provider),
       alternates: { canonical: providerPath(provider) },
-      robots: { index: isProviderIndexable(provider), follow: true },
+      robots: { index: resolution.indexable, follow: true },
       openGraph: provider.featuredImageUrl ? { images: [{ url: provider.featuredImageUrl }] } : undefined,
     };
   }
-  const name = providers[0].name;
-  const ctrMetadata = getLifeStanceOrganizationMetadata(slug, providers.length);
-  const hasIndexableLocation = providers.some(isProviderIndexable);
+  const name = providerDisplayName(providers[0].name);
   return {
-    title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getOrganizationSeoTitle(name) },
-    description: fitSeoDescription(ctrMetadata?.description || `View published ${name} locations, services, source details, and verification status on TreatmentLane.`),
+    title: getOrganizationSeoTitle(name),
+    description: getOrganizationSeoDescription(name, providers.length),
     alternates: { canonical: `/providers/${slug}` },
-    robots: { index: hasIndexableLocation, follow: true },
+    robots: { index: providers.some((provider) => isProviderIndexable(provider)), follow: true },
   };
 }
 
@@ -44,13 +45,30 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
 
   const providers = await getProvidersByOrganizationSlug(slug);
   if (!providers.length) notFound();
-  if (providers.length === 1) return <ProviderDetailPage provider={providers[0]} organizationProviders={providers} />;
+  if (providers.length === 1) {
+    const provider = providers[0];
+    const resolution = await resolveProviderListing(provider);
+    if (resolution.redirectTo) permanentRedirect(resolution.redirectTo);
+    const nearbyProviders = await getNearbyProviders(provider);
+    return <ProviderDetailPage provider={provider} organizationProviders={providers} nearbyProviders={nearbyProviders} />;
+  }
 
+  const name = providerDisplayName(providers[0].name);
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+      { "@type": "ListItem", position: 2, name: "Directory", item: absoluteUrl("/directory") },
+      { "@type": "ListItem", position: 3, name, item: absoluteUrl(`/providers/${slug}`) },
+    ],
+  };
   return <>
+    <JsonLd data={breadcrumb} />
     <section className="page-hero"><div className="shell">
-      <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span><span>{providers[0].name}</span></div>
+      <nav className="breadcrumb" aria-label="Breadcrumb"><Link href="/" prefetch={false}>Home</Link><span aria-hidden="true">/</span><Link href="/directory" prefetch={false}>Directory</Link><span aria-hidden="true">/</span><span>{name}</span></nav>
       <span className="kicker plain">Provider locations</span>
-      <h1>{providers[0].name}</h1>
+      <h1>{name}</h1>
       <p>Compare {providers.length.toLocaleString()} published locations. Each location has its own services, source evidence, and verification status.</p>
     </div></section>
     <section className="section"><div className="shell">

@@ -2,14 +2,20 @@
 
 import { FormEvent, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { useProviderReference } from "@/components/use-provider-reference";
 import { states } from "@/lib/content";
 import { trackEvent } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function ProviderApplicationForm({ listingReference = "" }: { listingReference?: string }) {
+  const fromHash = useProviderReference();
+  const reference = fromHash || listingReference;
+  const seededNotes = reference ? `Claim request for TreatmentLane listing: ${reference}` : "";
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const [notesOverride, setNotesOverride] = useState<string | null>(null);
+  const notes = notesOverride ?? seededNotes;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,7 +59,7 @@ export function ProviderApplicationForm({ listingReference = "" }: { listingRefe
         <label><span className="field-label">Relationship to organization <span className="required-mark" aria-hidden="true">*</span></span><select name="relationship" required defaultValue=""><option value="" disabled>Select one</option><option>Owner or executive</option><option>Employee</option><option>Authorized marketing partner</option><option>Other authorized representative</option></select></label>
         <label><span className="field-label">City <span className="required-mark" aria-hidden="true">*</span></span><input name="city" required maxLength={100} /></label>
         <label><span className="field-label">State <span className="required-mark" aria-hidden="true">*</span></span><select name="state" required defaultValue=""><option value="" disabled>Select state</option>{states.map((state) => <option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
-        <label className="full-field"><span className="field-label">Notes <span className="optional-label">(optional)</span></span><textarea name="notes" rows={5} maxLength={2000} defaultValue={listingReference ? `Claim request for TreatmentLane listing: ${listingReference}` : ""} placeholder="Tell us what services you provide and whether this is a new listing or a claim." /></label>
+        <label className="full-field"><span className="field-label">Notes <span className="optional-label">(optional)</span></span><textarea name="notes" rows={5} maxLength={2000} value={notes} onChange={(event) => setNotesOverride(event.target.value)} placeholder="Tell us what services you provide and whether this is a new listing or a claim." /></label>
         <label className="honeypot" aria-hidden="true">Leave this empty<input name="companyFax" tabIndex={-1} autoComplete="off" /></label>
       </div>
       {status === "error" && <p className="form-error" role="alert">{message}</p>}

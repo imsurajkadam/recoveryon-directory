@@ -4,6 +4,7 @@ import { ArrowRight, BadgeCheck, Building2, MapPin, MapPinned, Star } from "luci
 import { FeaturedBadge } from "@/components/featured-badge";
 import { ListingCta, ListingImpression } from "@/components/listing-event-tracking";
 import { TrackedContactLink } from "@/components/tracked-contact-link";
+import { providerCardSummary, providerDisplayName } from "@/lib/provider-display";
 import { providerPath } from "@/lib/providers";
 import { sourceDisplayName } from "@/lib/site";
 import type { Provider } from "@/lib/types";
@@ -18,6 +19,7 @@ const labels = {
 export function ProviderCard({ provider }: { provider: Provider }) {
   const tags = [...provider.treatmentTypes, ...provider.categories].filter((item, index, items) => items.indexOf(item) === index).slice(0, 4);
   const href = providerPath(provider);
+  const displayName = providerDisplayName(provider.name);
   const locationCountLabel = `${provider.organizationLocationCount.toLocaleString()} ${provider.organizationLocationCount === 1 ? "location" : "locations"}`;
   const sourceName = sourceDisplayName(provider.sourceUrl);
   const mapQuery = [provider.address, provider.city, provider.state, provider.postalCode].filter(Boolean).join(", ");
@@ -26,20 +28,20 @@ export function ProviderCard({ provider }: { provider: Provider }) {
     <article className={`provider-card${provider.isSponsored ? " provider-card-featured" : ""}`}>
       <ListingImpression providerId={provider.id} />
       {provider.isSponsored && <FeaturedBadge />}
-      <Link className="provider-card-media" href={href} aria-label={`View ${provider.name}`} prefetch={false}>
+        <Link className="provider-card-media" href={href} aria-label={`View ${displayName}`} prefetch={false}>
         {provider.featuredImageUrl
-          ? <Image src={provider.featuredImageUrl} alt={`${provider.name} facility`} fill sizes="(max-width: 760px) 100vw, 190px" />
+          ? <Image src={provider.featuredImageUrl} alt={`${displayName} facility`} fill sizes="(max-width: 760px) 100vw, 190px" />
           : <span className="provider-card-placeholder" aria-hidden="true"><Building2 /></span>}
       </Link>
       <div className="provider-card-body">
         <div className="provider-card-heading">
           <div className="eyebrow"><MapPin size={15} /> {provider.city}, {provider.state}</div>
           {provider.organizationLocationCount > 1
-            ? <Link className="location-count-badge" href={`/providers/${provider.organizationSlug}`} aria-label={`View all ${locationCountLabel} for ${provider.name}`} prefetch={false}><MapPinned size={14} /> {locationCountLabel}</Link>
+            ? <Link className="location-count-badge" href={`/providers/${provider.organizationSlug}`} aria-label={`View all ${locationCountLabel} for ${displayName}`} prefetch={false}><MapPinned size={14} /> {locationCountLabel}</Link>
             : <span className="location-count-badge"><MapPinned size={14} /> {locationCountLabel}</span>}
         </div>
-        <h2><Link href={href} prefetch={false}>{provider.name}</Link></h2>
-        <p>{provider.description || "View treatment types, services, contact information, and source details."}</p>
+        <h2><Link href={href} prefetch={false}>{displayName}</Link></h2>
+        <p>{providerCardSummary(provider)}</p>
         <div className="tag-row">{tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
         <div className="provider-card-meta">
           <span className="verification-line"><BadgeCheck size={16} /> {labels[provider.verificationStatus]}</span>

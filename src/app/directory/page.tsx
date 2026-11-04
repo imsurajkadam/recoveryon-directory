@@ -1,22 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { SearchX } from "lucide-react";
 import { Pagination } from "@/components/pagination";
 import { ProviderCard } from "@/components/provider-card";
 import { DirectoryFilterSubmit } from "@/components/directory-filter-submit";
 import { careCategories, states } from "@/lib/content";
+import { listingRobots } from "@/lib/listing-robots";
 import { getDirectoryFacets, searchProviders, type ProviderSort } from "@/lib/providers";
+
+export const revalidate = 3600;
 
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] || "" : value || ""; }
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
   const params = await searchParams;
-  const filtered = ["keyword", "location", "category", "state", "insurance", "level", "specialty", "sort", "page"].some((key) => Boolean(single(params[key])));
+  const robots = listingRobots(params, "/directory");
+  const page = Math.max(Number.parseInt(single(params.page), 10) || 1, 1);
   return {
-    title: "Recovery resource directory",
+    title: robots.index && page > 1 ? `Recovery resource directory, page ${page}` : "Recovery resource directory",
     description: "Search treatment, recovery, and mental health resource listings by service and location.",
-    robots: { index: !filtered, follow: true },
-    alternates: { canonical: "/directory" },
+    robots: { index: robots.index, follow: true },
+    alternates: { canonical: robots.canonical },
   };
 }
 
@@ -37,6 +42,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
     searchProviders({ keyword, location, category, state, insurance, level, specialty, sort, page: requestedPage }),
     getDirectoryFacets(),
   ]);
+  if (result.outOfRange) notFound();
   const paginationParams = Object.fromEntries(Object.entries({ keyword, location, category, state, insurance, level, specialty, sort: sort === "recommended" ? "" : sort }).filter(([, value]) => value));
 
   return (

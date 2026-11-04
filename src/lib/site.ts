@@ -5,6 +5,19 @@ export const SITE_DESCRIPTION =
   "A transparent directory for finding and comparing addiction treatment, recovery, and mental health resources across the United States.";
 export const CONTACT_EMAIL = "suraj@treatmentlane.com";
 
+/**
+ * Public business contact details. Leave phone and street fields blank until
+ * TreatmentLane publishes a real address or phone. Do not invent either.
+ */
+export const BUSINESS_CONTACT = {
+  phone: "",
+  streetAddress: "",
+  addressLocality: "",
+  addressRegion: "",
+  postalCode: "",
+  addressCountry: "US",
+};
+
 export function absoluteUrl(path = "/") {
   return new URL(path, SITE_URL).toString();
 }

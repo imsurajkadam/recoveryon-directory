@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { JsonLd } from "@/components/json-ld";
 import { AnalyticsPageViews } from "@/components/analytics-page-views";
 import Script from "next/script";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { BUSINESS_CONTACT, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-jakarta" });
 
@@ -29,6 +29,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     name: SITE_NAME,
     url: SITE_URL,
     description: SITE_DESCRIPTION,
+    ...(BUSINESS_CONTACT.phone ? { telephone: BUSINESS_CONTACT.phone } : {}),
+    ...(BUSINESS_CONTACT.streetAddress ? {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: BUSINESS_CONTACT.streetAddress,
+        addressLocality: BUSINESS_CONTACT.addressLocality || undefined,
+        addressRegion: BUSINESS_CONTACT.addressRegion || undefined,
+        postalCode: BUSINESS_CONTACT.postalCode || undefined,
+        addressCountry: BUSINESS_CONTACT.addressCountry,
+      },
+    } : {}),
   };
 
   return (

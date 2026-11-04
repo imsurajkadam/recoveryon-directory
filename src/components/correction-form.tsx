@@ -3,12 +3,16 @@
 import { FormEvent, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { useProviderReference } from "@/components/use-provider-reference";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function CorrectionForm({ providerSlug = "" }: { providerSlug?: string }) {
+  const fromHash = useProviderReference();
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const [providerOverride, setProviderOverride] = useState<string | null>(null);
+  const providerValue = providerOverride ?? (fromHash || providerSlug);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,7 +47,7 @@ export function CorrectionForm({ providerSlug = "" }: { providerSlug?: string })
     <div className="form-grid">
       <label><span className="field-label">Your name <span className="required-mark" aria-hidden="true">*</span></span><input name="requesterName" required maxLength={120} /></label>
       <label><span className="field-label">Email <span className="required-mark" aria-hidden="true">*</span></span><input name="requesterEmail" type="email" required maxLength={200} /></label>
-      <label className="full-field"><span className="field-label">Provider name or listing URL <span className="optional-label">(optional)</span></span><input name="providerSlug" defaultValue={providerSlug} maxLength={300} placeholder="Organization name or TreatmentLane listing URL" /></label>
+      <label className="full-field"><span className="field-label">Provider name or listing URL <span className="optional-label">(optional)</span></span><input name="providerSlug" value={providerValue} onChange={(event) => setProviderOverride(event.target.value)} maxLength={300} placeholder="Organization name or TreatmentLane listing URL" /></label>
       <label className="full-field"><span className="field-label">What should be corrected? <span className="required-mark" aria-hidden="true">*</span></span><textarea name="details" required rows={6} maxLength={3000} placeholder="Describe the current information, the requested correction, and how it can be verified." /></label>
       <label className="full-field"><span className="field-label">Supporting source URL <span className="optional-label">(optional)</span></span><input name="sourceUrl" type="url" maxLength={500} placeholder="https://" /></label>
       <label className="honeypot" aria-hidden="true">Leave this empty<input name="companyFax" tabIndex={-1} autoComplete="off" /></label>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EDITORIAL_REVIEWED_ON, editorialSources } from "@/lib/editorial-trust";
+import { editorialSources } from "@/lib/editorial-trust";
+
+const INDEXING_POLICY_REVIEWED_ON = "2026-11-04";
 
 export const metadata: Metadata = {
   title: "Editorial standards and sources",
@@ -10,10 +12,10 @@ export const metadata: Metadata = {
 
 export default function EditorialStandardsPage() {
   return <><section className="page-hero"><div className="shell"><span className="kicker plain">Editorial standards</span><h1>How TreatmentLane creates and reviews information</h1><p>Our goal is useful, traceable information with clear limits. We do not present directory content as medical advice or promise that a listing is right for a particular person.</p></div></section><article className="content-shell prose">
-    <p className="article-byline">Owned by the TreatmentLane Editorial Team. Last reviewed {new Date(EDITORIAL_REVIEWED_ON).toLocaleDateString("en-US", { dateStyle: "long" })}.</p>
+    <p className="article-byline">Owned by the TreatmentLane Editorial Team. Last reviewed {new Date(INDEXING_POLICY_REVIEWED_ON).toLocaleDateString("en-US", { dateStyle: "long" })}.</p>
     <h2>How pages are written</h2><p>We use plain language, structured provider data, public records, official guidance, and direct provider confirmations when available. A source link or verification label does not replace checking current licensing, services, availability, insurance, or cost directly.</p>
     <h2>Editorial review and clinical review</h2><p>Care and location pages are written and source-checked by the named TreatmentLane Editorial Team. We only name an individual clinical reviewer when that person has actually reviewed the page and their credentials can be shown. Pages without a named clinician should not be read as clinically reviewed.</p>
-    <h2>Provider pages and search eligibility</h2><p>Published listings can remain accessible to people using the directory, but only listings that meet our source, completeness, verification, or demonstrated search-demand threshold are eligible for search indexing and the provider sitemap.</p>
+    <h2>Provider pages and search eligibility</h2><p>Published listings stay available in the directory. A listing is eligible for search indexing and the provider sitemap only when it meets at least one quality tier: a demonstrated search-demand flag, a verified source or licence (a traceable source URL together with a non-listed verification status, a license summary, or an accreditation), or a complete public profile (phone, website, street address, and at least one listed service or level of care). Thin or empty listings stay noindex. Those thresholds live in one configuration so they can be tightened or relaxed without rewriting each page.</p>
     <h2>Corrections and updates</h2><p>Important updates receive a real review date. We do not change a page date merely because the site was rebuilt. Readers and organizations can <Link href="/corrections" prefetch={false}>request a correction</Link>.</p>
     <h2>Core sources</h2><ul>{editorialSources.map((source) => <li key={source.href}><a href={source.href} target="_blank" rel="noopener noreferrer">{source.label}</a></li>)}</ul>
   </article></>;

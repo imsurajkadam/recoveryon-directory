@@ -12,7 +12,7 @@ const staticPages = [
   ["/locations", "2026-09-28", 0.8],
   ["/guides", "2026-09-28", 0.8],
   ["/about", "2026-09-28", 0.6],
-  ["/about/editorial-standards", "2026-10-24", 0.7],
+  ["/about/editorial-standards", "2026-11-04", 0.7],
   ["/how-we-verify", "2026-10-20", 0.7],
   ["/emergency-help", "2026-09-28", 0.7],
   ["/providers/apply", "2026-10-20", 0.6],
