@@ -182,6 +182,9 @@ create index if not exists providers_recommended_order_idx
 create index if not exists providers_published_state_city_idx
   on providers(state, city)
   where publication_status = 'published';
+create index if not exists providers_published_state_updated_idx
+  on providers(state, updated_at desc)
+  where publication_status = 'published';
 create index if not exists providers_published_organization_idx
   on providers(organization_slug)
   where publication_status = 'published';

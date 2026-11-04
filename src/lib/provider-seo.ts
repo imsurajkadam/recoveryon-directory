@@ -1,5 +1,5 @@
 export { providerPath as providerSeoPath } from "@/lib/provider-path";
-export { isProviderIndexable, indexingTiers, INDEXING_POLICY, type IndexingSignals, type IndexingTier } from "@/lib/indexing-policy";
+export { assessProviderIndexing, isProviderIndexable, INDEXING_POLICY, type IndexingDecision, type IndexingSignals, type NoindexReason } from "@/lib/indexing-policy";
 export {
   clampMetaDescription,
   clampMetaDescription as fitSeoDescription,

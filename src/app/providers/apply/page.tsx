@@ -3,16 +3,12 @@ import Image from "next/image";
 import { ProviderApplicationForm } from "@/components/provider-application-form";
 import { brandImageUrl } from "@/lib/site";
 
-export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
-  const params = await searchParams;
-  const hasQuery = Object.values(params).some((value) => Array.isArray(value) ? value.some(Boolean) : Boolean(value));
-  return {
-    title: "List or claim your organization",
-    description: "Submit a treatment, recovery, or behavioral health organization for TreatmentLane review.",
-    alternates: { canonical: "/providers/apply" },
-    robots: hasQuery ? { index: false, follow: true } : undefined,
-  };
-}
+export const metadata: Metadata = {
+  title: "List or claim your organization",
+  description: "Submit a treatment, recovery, or behavioral health organization for TreatmentLane review.",
+  alternates: { canonical: "/providers/apply" },
+  robots: { index: false, follow: true },
+};
 
 export default async function ApplyPage({ searchParams }: { searchParams: Promise<{ provider?: string }> }) {
   const { provider = "" } = await searchParams;

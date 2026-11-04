@@ -11,7 +11,7 @@ import { stateEditorial } from "@/lib/state-editorial";
 import { EDITORIAL_REVIEWED_ON, editorialAuthor, editorialSources } from "@/lib/editorial-trust";
 import { listingRobots } from "@/lib/listing-robots";
 import { slugifyPlace } from "@/lib/places";
-import { getPublishedCities, hasPublishedProviders, providerPath, searchProviders } from "@/lib/providers";
+import { getPublishedCities, providerPath, searchProviders } from "@/lib/providers";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -23,14 +23,13 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const query = await searchParams;
   const state = states.find((item) => item.slug === slug);
   if (!state) return {};
-  const hasListings = await hasPublishedProviders({ state: state.code });
   const robots = listingRobots(query, `/locations/${state.slug}`);
   const page = Math.max(Number.parseInt(query.page || "1", 10) || 1, 1);
   return {
     title: page > 1 ? `Treatment resources in ${state.name}, page ${page}` : `Treatment resources in ${state.name}`,
     description: `Find and compare published addiction treatment, detox, mental health, and recovery resources in ${state.name}. Verify licensing, services, and insurance.`,
     alternates: { canonical: robots.canonical },
-    robots: { index: hasListings && robots.index, follow: true },
+    robots: { index: robots.index, follow: true },
   };
 }
 
@@ -55,14 +54,20 @@ export default async function StatePage({ params, searchParams }: { params: Prom
       url: absoluteUrl(providerPath(provider)),
     })),
   } : null;
+  const stateFaq = result.total > 0 ? [{
+    question: `How many providers does TreatmentLane list in ${state.name}?`,
+    answer: `TreatmentLane publishes ${result.total.toLocaleString()} ${result.total === 1 ? "listing" : "listings"} in ${state.name}.`,
+  }] : [];
   const editorialJsonLd = { "@context": "https://schema.org", "@type": "WebPage", name: `Treatment and recovery resources in ${state.name}`, dateModified: EDITORIAL_REVIEWED_ON, author: { "@type": "Organization", name: editorialAuthor.name, url: absoluteUrl(editorialAuthor.url) }, citation: editorialSources.map((source) => source.href), mainEntityOfPage: absoluteUrl(`/locations/${state.slug}`) };
   return <>
     <JsonLd data={editorialJsonLd} />
+    {stateFaq.length > 0 && <JsonLd data={{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: stateFaq.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })) }} />}
     {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
     <section className="page-hero"><div className="shell">
       <div className="breadcrumb"><Link href="/locations" prefetch={false}>Locations</Link><span>/</span><span>{state.name}</span></div>
       <h1>Treatment and recovery resources in {state.name}</h1>
       <p>Compare published listings and confirm licensing, services, insurance, and availability directly.</p>
+      {stateFaq.map((item) => <div className="article-faq" key={item.question}><h3>{item.question}</h3><p>{item.answer}</p></div>)}
       <div className="inline-actions"><a className="button" href="#listings">View {result.total.toLocaleString()} listings</a><Link className="button button-secondary" href={`/directory?state=${state.code}`} prefetch={false}>Use advanced filters</Link></div>
     </div></section>
     {editorial ? <section className="section state-guidance"><div className="shell content-shell prose">

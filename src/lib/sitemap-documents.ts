@@ -5,7 +5,7 @@ import { guides } from "@/lib/content";
 import { cityHubPath } from "@/lib/places";
 import { getPublishedCities, getProviderSitemapEntries, getProviderSitemapManifest } from "@/lib/providers";
 import { absoluteUrl } from "@/lib/site";
-import { chunkEntries } from "@/lib/sitemap-split";
+import { chunkByLimits, sitemapEntryBytes } from "@/lib/sitemap-split";
 import { type SitemapUrl } from "@/lib/sitemap-xml";
 import { states } from "@/lib/us-states";
 
@@ -33,7 +33,7 @@ export async function citySitemapChunks(): Promise<SitemapUrl[][]> {
     changefreq: "weekly",
     priority: 0.6,
   }));
-  return chunkEntries(entries);
+  return chunkByLimits(entries, (entry) => sitemapEntryBytes(entry.loc, entry.lastmod, entry.priority ?? 0.6));
 }
 
 export async function locationSitemapEntries(): Promise<SitemapUrl[]> {
@@ -60,7 +60,7 @@ export async function providerSitemapDocument(segmentId: string): Promise<Sitema
     loc: absoluteUrl(entry.path),
     lastmod: dateOnly(entry.lastmod),
     changefreq: "monthly" as const,
-    priority: entry.path.split("/").length > 3 ? 0.8 : 0.7,
+    priority: entry.priority,
   }));
 }
 

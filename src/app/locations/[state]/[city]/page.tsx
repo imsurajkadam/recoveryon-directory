@@ -58,6 +58,10 @@ export default async function CityPage({ params, searchParams }: {
   });
   if (result.outOfRange) notFound();
   const path = `/locations/${state.slug}/${citySlug}`;
+  const cityFaq = result.total > 0 ? [{
+    question: `How many providers does TreatmentLane list in ${cityName}?`,
+    answer: `TreatmentLane publishes ${result.total.toLocaleString()} ${result.total === 1 ? "listing" : "listings"} in ${cityName}, ${state.name}.`,
+  }] : [];
   const itemListJsonLd = result.providers.length ? {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -79,11 +83,13 @@ export default async function CityPage({ params, searchParams }: {
   };
   return <>
     <JsonLd data={breadcrumbJsonLd} />
+    {cityFaq.length > 0 && <JsonLd data={{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: cityFaq.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })) }} />}
     {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
     <section className="page-hero"><div className="shell">
       <nav className="breadcrumb" aria-label="Breadcrumb"><Link href="/locations" prefetch={false}>Locations</Link><span aria-hidden="true">/</span><Link href={`/locations/${state.slug}`} prefetch={false}>{state.name}</Link><span aria-hidden="true">/</span><span>{cityName}</span></nav>
       <h1>Treatment and recovery resources in {cityName}, {state.name}</h1>
-      <p>TreatmentLane publishes {result.total.toLocaleString()} {result.total === 1 ? "listing" : "listings"} in {cityName}. Confirm licensing, services, insurance, and availability directly before making a decision.</p>
+      <p>TreatmentLane publishes {result.total.toLocaleString()} {result.total === 1 ? "listing" : "listings"} in {cityName}, {state.name}. Confirm licensing, services, insurance, and availability directly before making a decision.</p>
+      {cityFaq.map((item) => <div className="article-faq" key={item.question}><h3>{item.question}</h3><p>{item.answer}</p></div>)}
     </div></section>
     <section className="section" id="listings"><div className="shell">{result.providers.length ? <>
       <div className="results-heading"><div><h2>{result.total.toLocaleString()} listings in {cityName}</h2><p>Showing {result.providers.length} listings on this page.</p></div></div>

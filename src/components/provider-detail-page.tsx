@@ -5,7 +5,7 @@ import { JsonLd } from "@/components/json-ld";
 import { ProviderReviews } from "@/components/provider-reviews";
 import { TrackedContactLink } from "@/components/tracked-contact-link";
 import { cityHubPath, inferredCity } from "@/lib/places";
-import { providerDisplayName, providerLocationLabel, providerOverviewCopy } from "@/lib/provider-display";
+import { providerDisplayName, providerFaq, providerLocationLabel, providerOverviewCopy } from "@/lib/provider-display";
 import { providerPath, providerReferenceHref } from "@/lib/provider-path";
 import { absoluteUrl, sourceDisplayName } from "@/lib/site";
 import type { Provider } from "@/lib/types";
@@ -47,6 +47,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
   const mapQuery = [provider.address, cityName, provider.state, provider.postalCode].filter(Boolean).join(", ");
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   const overview = providerOverviewCopy(provider);
+  const faqs = providerFaq(provider, { cityName, stateName: stateInfo?.name || null, nearbyCount: nearbyProviders.length });
   const crumbs = [
     { name: "Home", path: "/" },
     { name: "Locations", path: "/locations" },
@@ -64,6 +65,11 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
       addressRegion: provider.state, postalCode: provider.postalCode || undefined, addressCountry: "US",
     },
   };
+  const faqJsonLd = faqs.length ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })),
+  } : null;
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -78,6 +84,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
   return <>
     <JsonLd data={jsonLd} />
     <JsonLd data={breadcrumbJsonLd} />
+    {faqJsonLd && <JsonLd data={faqJsonLd} />}
     <section className="provider-hero"><div className="shell">
       <nav className="breadcrumb" aria-label="Breadcrumb">{crumbs.map((crumb, index) => {
         const last = index === crumbs.length - 1;
@@ -137,6 +144,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
         <section className="listing-section">
           <span className="section-label">Overview</span><h2>About {displayName}</h2>
           <p className="listing-lead">{overview}</p>
+          {stateInfo && <p>{displayName} is in {cityName}, {stateInfo.name}.{nearbyProviders.length > 0 ? ` ${nearbyProviders.length.toLocaleString()} other published ${nearbyProviders.length === 1 ? "provider is" : "providers are"} linked on this page.` : ""}</p>}
           <div className="quick-facts">
             {careTypes.length > 0 && <div><Layers3 /><span>Primary type</span><strong>{careTypes[0]}</strong></div>}
             {provider.treatmentDuration && <div><Clock3 /><span>Typical duration</span><strong>{provider.treatmentDuration}</strong></div>}
@@ -177,6 +185,12 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <span className="section-label">Safety checks</span><h2>Licensing and accreditation</h2>
           {provider.licenseSummary && <p>{provider.licenseSummary}</p>}
           {provider.accreditation.length > 0 && <InformationTags items={provider.accreditation} />}
+        </section>}
+
+        {faqs.length > 0 && <section className="listing-section">
+          <span className="section-label">From this listing</span>
+          <h2>Questions about {displayName}</h2>
+          {faqs.map((item) => <div className="article-faq" key={item.question}><h3>{item.question}</h3><p>{item.answer}</p></div>)}
         </section>}
 
         <ProviderReviews providerId={provider.id} providerName={displayName} />

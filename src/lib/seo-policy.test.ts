@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { indexingTiers, isProviderIndexable, type IndexingSignals } from "./indexing-policy";
+import { assessProviderIndexing, type IndexingSignals } from "./indexing-policy";
 import { canonicalPathForProvider, chooseCanonicalProvider, type DuplicateCandidate } from "./provider-duplicates";
 import { clampMetaDescription, fixIndefiniteArticles, getProviderSeoTitle, providerDisplayName } from "./provider-display";
 import { paginationItems } from "./pagination";
-import { chunkEntries, SITEMAP_URL_LIMIT } from "./sitemap-split";
+import { chunkByLimits, chunkEntries, SITEMAP_URL_LIMIT } from "./sitemap-split";
 import { listingRobots } from "./listing-robots";
 
 const base: IndexingSignals = {
+  name: "Example Clinic",
+  city: "Austin",
+  state: "TX",
   organizationSlug: "example-clinic",
   locationSlug: "austin",
   organizationLocationCount: 1,
@@ -18,62 +21,68 @@ const base: IndexingSignals = {
   levelsOfCare: [],
   treatmentTypes: [],
   therapies: [],
+  insurance: [],
   sourceUrl: null,
   licenseSummary: null,
   accreditation: [],
   verificationStatus: "listed",
+  publicationStatus: "published",
 };
 
-test("thin listings stay noindex", () => {
-  assert.equal(isProviderIndexable(base), false);
-  assert.deepEqual(indexingTiers(base), []);
+test("name-only listings stay noindex", () => {
+  const decision = assessProviderIndexing(base);
+  assert.equal(decision.indexable, false);
+  assert.equal(decision.reason, "name-only");
 });
 
-test("complete phone, website, address, and one service is indexable", () => {
-  const provider: IndexingSignals = {
-    ...base,
-    phone: "(512) 555-0100",
-    website: "https://example.org",
-    address: "100 Main Street",
-    levelsOfCare: ["Outpatient"],
-  };
-  assert.deepEqual(indexingTiers(provider), ["complete"]);
-  assert.equal(isProviderIndexable(provider), true);
+test("one useful contact or detail is enough to index", () => {
+  for (const extra of [
+    { phone: "(512) 555-0100" },
+    { website: "https://example.org" },
+    { address: "100 Main Street" },
+    { levelsOfCare: ["Outpatient"] },
+    { insurance: ["Medicaid"] },
+    { categories: ["Outpatient Programs"] },
+  ]) {
+    const decision = assessProviderIndexing({ ...base, ...extra });
+    assert.equal(decision.indexable, true, JSON.stringify(extra));
+    assert.equal(decision.reason, null);
+  }
 });
 
-test("contact details without a service stay noindex", () => {
-  const provider: IndexingSignals = {
-    ...base,
-    phone: "(512) 555-0100",
-    website: "https://example.org",
-    address: "100 Main Street",
-  };
-  assert.equal(isProviderIndexable(provider), false);
-});
-
-test("verified source or licence qualifies without a full contact profile", () => {
-  assert.equal(isProviderIndexable({ ...base, sourceUrl: "https://findtreatment.gov/x", licenseSummary: "State license 123" }), true);
-  assert.equal(isProviderIndexable({ ...base, sourceUrl: "https://findtreatment.gov/x", accreditation: ["Joint Commission"] }), true);
-  assert.equal(isProviderIndexable({ ...base, sourceUrl: "https://findtreatment.gov/x", verificationStatus: "data-verified" }), true);
-  assert.equal(isProviderIndexable({ ...base, sourceUrl: "https://findtreatment.gov/x" }), false);
-  assert.equal(isProviderIndexable({ ...base, licenseSummary: "State license 123" }), false);
-});
-
-test("search-demand allowlist stays indexable", () => {
-  const provider: IndexingSignals = {
+test("demand and verified signals raise priority and do not index a stub", () => {
+  const stub = assessProviderIndexing({
     ...base,
     organizationSlug: "lifestance-health",
     locationSlug: "highland",
     organizationLocationCount: 8,
-  };
-  assert.equal(isProviderIndexable(provider), true);
-  assert.ok(indexingTiers(provider).includes("demand"));
+  });
+  assert.equal(stub.indexable, false);
+  assert.ok(stub.boosts.includes("demand"));
+
+  const reachable = assessProviderIndexing({ ...base, phone: "(512) 555-0100", sourceUrl: "https://findtreatment.gov/x", verificationStatus: "data-verified" });
+  assert.equal(reachable.indexable, true);
+  assert.ok(reachable.boosts.includes("verified"));
+  assert.equal(reachable.priority, 0.8);
+
+  const demanded = assessProviderIndexing({
+    ...base,
+    phone: "(512) 555-0100",
+    organizationSlug: "lifestance-health",
+    locationSlug: "highland",
+    organizationLocationCount: 8,
+  });
+  assert.equal(demanded.priority, 0.9);
 });
 
-test("demand on an extra slug keeps the canonical location indexable", () => {
-  const canonical: IndexingSignals = { ...base, organizationSlug: "example-clinic", locationSlug: "austin", organizationLocationCount: 2 };
-  assert.equal(isProviderIndexable(canonical), false);
-  assert.equal(isProviderIndexable(canonical, ["/providers/lifestance-health-highland"]), true);
+test("closed, test, unpublished, and duplicate listings stay noindex", () => {
+  assert.equal(assessProviderIndexing({ ...base, phone: "555", name: "Example Clinic (Closed)" }).reason, "closed");
+  assert.equal(assessProviderIndexing({ ...base, phone: "555", operationalStatus: "inactive" }).reason, "closed");
+  assert.equal(assessProviderIndexing({ ...base, phone: "555", publicationStatus: "archived" }).reason, "closed");
+  assert.equal(assessProviderIndexing({ ...base, phone: "555", name: "Test Clinic" }).reason, "test");
+  assert.equal(assessProviderIndexing({ ...base, phone: "555", publicationStatus: "draft" }).reason, "unpublished");
+  assert.equal(assessProviderIndexing({ ...base, phone: "555" }, { isDuplicate: true }).reason, "duplicate");
+  assert.equal(assessProviderIndexing({ ...base, phone: "555", name: "X", city: "" }).reason, "missing-identity");
 });
 
 test("provider titles use brand casing, city, and no street or ellipsis", () => {
@@ -138,11 +147,13 @@ test("numbered pagination keeps the window bounded", () => {
   assert.deepEqual(paginationItems(10, 10), [1, "gap", 8, 9, 10]);
 });
 
-test("sitemap chunks stay under the protocol limit", () => {
+test("sitemap chunks stay under the URL and byte limits", () => {
   const chunks = chunkEntries(Array.from({ length: SITEMAP_URL_LIMIT + 10 }, (_, index) => index));
   assert.equal(chunks.length, 2);
   assert.equal(chunks[0].length, SITEMAP_URL_LIMIT);
   assert.equal(chunks[1].length, 10);
+  const byBytes = chunkByLimits(["aaaa", "bbbb", "cccc"], (value) => value.length, 50, 8);
+  assert.deepEqual(byBytes, [["aaaa", "bbbb"], ["cccc"]]);
 });
 
 test("directory filters are noindex and page URLs stay indexable", () => {

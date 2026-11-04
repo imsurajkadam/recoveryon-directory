@@ -3,13 +3,13 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { getDatabase } from "@/lib/db";
-import { isProviderIndexable, type IndexingSignals } from "@/lib/indexing-policy";
+import { assessProviderIndexing, isProviderIndexable, type IndexingSignals } from "@/lib/indexing-policy";
 import { inferredCity } from "@/lib/places";
 import { fixIndefiniteArticles } from "@/lib/provider-display";
 import { addressSearchToken, chooseCanonicalProvider, clusterDuplicates, type DuplicateCandidate } from "@/lib/provider-duplicates";
 import { providerPath } from "@/lib/provider-path";
-import { chunkEntries, sitemapSegmentId } from "@/lib/sitemap-split";
-import { brandImageUrl } from "@/lib/site";
+import { chunkByLimits, sitemapEntryBytes, sitemapSegmentId } from "@/lib/sitemap-split";
+import { absoluteUrl, brandImageUrl } from "@/lib/site";
 import type { Provider } from "@/lib/types";
 
 export { providerPath };
@@ -349,14 +349,15 @@ const resolveProviderListingCached = unstable_cache(async (serialized: string): 
   const alternatePaths = cluster.map((item) => providerPath(item));
   return {
     redirectTo: canonicalPath === providerPath(current) ? null : canonicalPath,
-    indexable: isProviderIndexable(current, alternatePaths),
+    indexable: assessProviderIndexing(current, { alternatePaths }).indexable,
   };
-}, ["provider-listing-resolution"], { revalidate: 3600, tags: ["providers"] });
+}, ["provider-listing-resolution-v2"], { revalidate: 3600, tags: ["providers"] });
 
 export async function resolveProviderListing(provider: DuplicateCandidate & IndexingSignals): Promise<ListingResolution> {
   if (!provider.address) return { redirectTo: null, indexable: isProviderIndexable(provider) };
   const key = JSON.stringify({
     id: provider.id,
+    name: provider.name,
     organizationSlug: provider.organizationSlug,
     locationSlug: provider.locationSlug,
     organizationLocationCount: provider.organizationLocationCount,
@@ -370,6 +371,7 @@ export async function resolveProviderListing(provider: DuplicateCandidate & Inde
     levelsOfCare: provider.levelsOfCare,
     treatmentTypes: provider.treatmentTypes,
     therapies: provider.therapies,
+    insurance: provider.insurance,
     sourceUrl: provider.sourceUrl,
     licenseSummary: provider.licenseSummary,
     accreditation: provider.accreditation,
@@ -379,10 +381,15 @@ export async function resolveProviderListing(provider: DuplicateCandidate & Inde
 }
 
 type SitemapListing = IndexingSignals & DuplicateCandidate & { updatedAt: string };
+type RankedListing = { listing: SitemapListing; priority: number };
+
+function listingXmlBytes(listing: SitemapListing, priority: number) {
+  return sitemapEntryBytes(absoluteUrl(providerPath(listing)), listing.updatedAt, priority);
+}
 
 const listingSelect = `p.id, p.name, p.organization_slug, p.location_slug, p.address, p.city, p.state, p.phone, p.website,
-  p.categories, p.levels_of_care, p.treatment_types, p.therapies, p.license_summary, p.accreditation,
-  p.source_url, p.verification_status, p.evidence_score, p.updated_at,
+  p.categories, p.levels_of_care, p.treatment_types, p.therapies, p.insurance, p.license_summary, p.accreditation,
+  p.source_url, p.verification_status, p.publication_status, p.evidence_score, p.updated_at,
   coalesce(org_counts.cnt, 1)::int as organization_location_count`;
 
 const listingOrgJoin = `left join (
@@ -395,6 +402,7 @@ const listingOrgJoin = `left join (
 function toSitemapListing(row: Record<string, unknown>): SitemapListing {
   return {
     id: String(row.id),
+    name: String(row.name || ""),
     organizationSlug: String(row.organization_slug),
     locationSlug: String(row.location_slug),
     organizationLocationCount: Number(row.organization_location_count || 1),
@@ -407,10 +415,12 @@ function toSitemapListing(row: Record<string, unknown>): SitemapListing {
     levelsOfCare: textList(row.levels_of_care),
     treatmentTypes: textList(row.treatment_types),
     therapies: textList(row.therapies),
+    insurance: textList(row.insurance),
     licenseSummary: row.license_summary ? String(row.license_summary) : null,
     accreditation: textList(row.accreditation),
     sourceUrl: row.source_url ? String(row.source_url) : null,
     verificationStatus: String(row.verification_status) as Provider["verificationStatus"],
+    publicationStatus: row.publication_status ? String(row.publication_status) : "published",
     evidenceScore: Number(row.evidence_score || 0),
     updatedAt: toIso(row.updated_at),
   };
@@ -432,12 +442,13 @@ async function loadSitemapListings(state: string | null) {
   return (rows as unknown as Array<Record<string, unknown>>).map(toSitemapListing);
 }
 
-function indexableCanonicalListings(listings: SitemapListing[]) {
+function indexableCanonicalListings(listings: SitemapListing[]): RankedListing[] {
   return clusterDuplicates(listings).flatMap((cluster) => {
     const canonical = chooseCanonicalProvider(cluster);
     const alternatePaths = cluster.map((item) => providerPath(item));
-    return isProviderIndexable(canonical, alternatePaths) ? [canonical] : [];
-  }).sort((a, b) => providerPath(a).localeCompare(providerPath(b)));
+    const decision = assessProviderIndexing(canonical, { alternatePaths });
+    return decision.indexable ? [{ listing: canonical, priority: decision.priority }] : [];
+  }).sort((a, b) => providerPath(a.listing).localeCompare(providerPath(b.listing)));
 }
 
 export type ProviderSitemapSegment = {
@@ -454,16 +465,16 @@ function latest(values: string[]) {
 
 const getProviderSitemapManifestCached = unstable_cache(async (): Promise<ProviderSitemapSegment[]> => {
   const indexable = indexableCanonicalListings(await loadSitemapListings(null));
-  const byState = new Map<string, SitemapListing[]>();
-  for (const listing of indexable) {
-    const group = byState.get(listing.state) || [];
-    group.push(listing);
-    byState.set(listing.state, group);
+  const byState = new Map<string, RankedListing[]>();
+  for (const ranked of indexable) {
+    const group = byState.get(ranked.listing.state) || [];
+    group.push(ranked);
+    byState.set(ranked.listing.state, group);
   }
   const segments: ProviderSitemapSegment[] = [];
   for (const [state, group] of byState) {
-    const chunks = chunkEntries(group);
-    const lastmod = latest(group.map((item) => item.updatedAt));
+    const chunks = chunkByLimits(group, (ranked) => listingXmlBytes(ranked.listing, ranked.priority));
+    const lastmod = latest(group.map((item) => item.listing.updatedAt));
     chunks.forEach((_, index) => segments.push({
       id: sitemapSegmentId(state.toLowerCase(), index, chunks.length),
       state,
@@ -472,15 +483,19 @@ const getProviderSitemapManifestCached = unstable_cache(async (): Promise<Provid
       kind: "state",
     }));
   }
-  const organizations = new Map<string, string>();
-  for (const listing of indexable) {
-    if (listing.organizationLocationCount <= 1) continue;
-    const existing = organizations.get(listing.organizationSlug);
-    if (!existing || listing.updatedAt > existing) organizations.set(listing.organizationSlug, listing.updatedAt);
+  const organizations = new Map<string, { updatedAt: string; priority: number }>();
+  for (const ranked of indexable) {
+    if (ranked.listing.organizationLocationCount <= 1) continue;
+    const existing = organizations.get(ranked.listing.organizationSlug);
+    if (!existing || ranked.listing.updatedAt > existing.updatedAt) {
+      organizations.set(ranked.listing.organizationSlug, { updatedAt: ranked.listing.updatedAt, priority: ranked.priority });
+    } else if (ranked.priority > existing.priority) {
+      existing.priority = ranked.priority;
+    }
   }
   const organizationEntries = [...organizations.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  const organizationChunks = chunkEntries(organizationEntries);
-  const organizationLastmod = latest(organizationEntries.map(([, updatedAt]) => updatedAt));
+  const organizationChunks = chunkByLimits(organizationEntries, ([slug, value]) => sitemapEntryBytes(absoluteUrl(`/providers/${slug}`), value.updatedAt, value.priority));
+  const organizationLastmod = latest(organizationEntries.map(([, value]) => value.updatedAt));
   organizationChunks.forEach((_, index) => segments.push({
     id: sitemapSegmentId("organizations", index, organizationChunks.length),
     state: null,
@@ -489,7 +504,7 @@ const getProviderSitemapManifestCached = unstable_cache(async (): Promise<Provid
     kind: "organizations",
   }));
   return segments.sort((a, b) => a.id.localeCompare(b.id));
-}, ["provider-sitemap-manifest-v1"], { revalidate: 86400, tags: ["providers"] });
+}, ["provider-sitemap-manifest-v2"], { revalidate: 86400, tags: ["providers"] });
 
 export async function getProviderSitemapManifest() {
   return getProviderSitemapManifestCached();
@@ -501,21 +516,27 @@ export async function getProviderSitemapEntries(segmentId: string) {
   if (!segment) return null;
   if (segment.kind === "organizations") {
     const indexable = indexableCanonicalListings(await loadSitemapListings(null));
-    const organizations = new Map<string, string>();
-    for (const listing of indexable) {
-      if (listing.organizationLocationCount <= 1) continue;
-      const existing = organizations.get(listing.organizationSlug);
-      if (!existing || listing.updatedAt > existing) organizations.set(listing.organizationSlug, listing.updatedAt);
+    const organizations = new Map<string, { updatedAt: string; priority: number }>();
+    for (const ranked of indexable) {
+      if (ranked.listing.organizationLocationCount <= 1) continue;
+      const existing = organizations.get(ranked.listing.organizationSlug);
+      if (!existing || ranked.listing.updatedAt > existing.updatedAt) {
+        organizations.set(ranked.listing.organizationSlug, { updatedAt: ranked.listing.updatedAt, priority: ranked.priority });
+      } else if (ranked.priority > existing.priority) existing.priority = ranked.priority;
     }
     const entries = [...organizations.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-    return (chunkEntries(entries)[segment.part] || []).map(([slug, updatedAt]) => ({
+    const chunks = chunkByLimits(entries, ([slug, value]) => sitemapEntryBytes(absoluteUrl(`/providers/${slug}`), value.updatedAt, value.priority));
+    return (chunks[segment.part] || []).map(([slug, value]) => ({
       path: `/providers/${slug}`,
-      lastmod: updatedAt,
+      lastmod: value.updatedAt,
+      priority: value.priority,
     }));
   }
   const listings = indexableCanonicalListings(await loadSitemapListings(segment.state));
-  return (chunkEntries(listings)[segment.part] || []).map((listing) => ({
-    path: providerPath(listing),
-    lastmod: listing.updatedAt,
+  const chunks = chunkByLimits(listings, (ranked) => listingXmlBytes(ranked.listing, ranked.priority));
+  return (chunks[segment.part] || []).map((ranked) => ({
+    path: providerPath(ranked.listing),
+    lastmod: ranked.listing.updatedAt,
+    priority: ranked.priority,
   }));
 }
