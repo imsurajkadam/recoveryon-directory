@@ -19,29 +19,13 @@ export function isDemandPriorityProvider(provider: Pick<ProviderSeoSignals, "org
 }
 
 export function isProviderIndexable(provider: ProviderSeoSignals) {
-  if (isDemandPriorityProvider(provider)) return true;
-
-  const contactSignals = [provider.address, provider.phone, provider.website].filter(Boolean).length;
-  const careSignals = [
-    provider.categories,
-    provider.levelsOfCare,
-    provider.treatmentTypes,
-    provider.therapies,
-    provider.insurance,
-  ].filter((items) => items.length > 0).length;
-  const hasSubstantiveDescription = (provider.description?.trim().length || 0) >= 160;
-  const hasTraceableSource = Boolean(provider.sourceUrl);
-
-  if (provider.verificationStatus !== "listed") {
-    return hasTraceableSource && Boolean(provider.lastVerifiedAt) && contactSignals >= 2;
-  }
-
-  return provider.evidenceScore >= 70
-    && hasSubstantiveDescription
-    && hasTraceableSource
-    && Boolean(provider.lastVerifiedAt)
-    && contactSignals >= 2
-    && careSignals >= 2;
+  // Every published provider page is indexable. A quality gate added
+  // 2026-10-24 restricted indexing to a small verified subset, which
+  // collapsed the sitemap from ~36k URLs to 461 and left most provider
+  // pages noindexed. Removed 2026-11-09 at the site owner's request:
+  // all published providers are indexable again.
+  void provider;
+  return true;
 }
 
 function truncateAtWord(value: string, maxLength: number) {
