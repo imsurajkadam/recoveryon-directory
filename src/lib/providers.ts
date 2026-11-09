@@ -3,8 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { getDatabase } from "@/lib/db";
-import { priorityProviderOrganizationSlugs } from "@/lib/provider-search-priority";
-import { isProviderIndexable, type ProviderSeoSignals } from "@/lib/provider-seo";
+import type { ProviderSeoSignals } from "@/lib/provider-seo";
 import { brandImageUrl } from "@/lib/site";
 import type { Provider } from "@/lib/types";
 
@@ -248,30 +247,6 @@ export async function getSitemapProviders() {
       ) org_counts on org_counts.organization_slug = p.organization_slug
       where p.publication_status = 'published'
         and p.organization_slug is not null and p.location_slug is not null
-        and (
-          p.organization_slug in ${sql(priorityProviderOrganizationSlugs)}
-          or (
-            p.verification_status <> 'listed'
-            and p.source_url is not null
-            and p.last_verified_at is not null
-            and num_nonnulls(p.address, p.phone, p.website) >= 2
-          )
-          or (
-            p.verification_status = 'listed'
-            and p.evidence_score >= 70
-            and length(trim(coalesce(p.description, ''))) >= 160
-            and p.source_url is not null
-            and p.last_verified_at is not null
-            and num_nonnulls(p.address, p.phone, p.website) >= 2
-            and (
-              (case when cardinality(coalesce(p.categories, '{}')) > 0 then 1 else 0 end)
-              + (case when cardinality(coalesce(p.levels_of_care, '{}')) > 0 then 1 else 0 end)
-              + (case when cardinality(coalesce(p.treatment_types, '{}')) > 0 then 1 else 0 end)
-              + (case when cardinality(coalesce(p.therapies, '{}')) > 0 then 1 else 0 end)
-              + (case when cardinality(coalesce(p.insurance, '{}')) > 0 then 1 else 0 end)
-            ) >= 2
-          )
-        )
       order by p.organization_slug, p.location_slug`;
     const providers = rows.map((row) => ({
       name: String(row.name),
@@ -295,6 +270,6 @@ export async function getSitemapProviders() {
       evidenceScore: Number(row.evidence_score || 0),
       verificationStatus: String(row.verification_status) as Provider["verificationStatus"],
     } satisfies SitemapProvider));
-    return providers.filter(isProviderIndexable);
+    return providers;
   } catch (error) { console.error("Sitemap provider lookup failed", error); throw error; }
 }
