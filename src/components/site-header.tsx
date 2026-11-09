@@ -10,6 +10,7 @@ const links = [
   { href: "/directory", label: "Find care" },
   { href: "/care", label: "Types of care" },
   { href: "/locations", label: "Locations" },
+  { href: "/insurance", label: "Insurance" },
   { href: "/guides", label: "Guides" },
   { href: "/about", label: "About" },
 ];

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, BookOpenCheck, Building2, Check, ClipboardCheck, HeartHandshake, MapPinned, PhoneCall, SearchCheck, ShieldCheck } from "lucide-react";
 import { SearchForm } from "@/components/search-form";
 import { careCategories, featuredStateCodes, guides, states } from "@/lib/content";
+import { insurers } from "@/lib/insurance-data";
 
 const categoryIcons = [Building2, ShieldCheck, HeartHandshake, BookOpenCheck, MapPinned, SearchCheck, ClipboardCheck, BadgeCheck];
 
@@ -67,6 +68,13 @@ export default function Home() {
         <div className="shell">
           <div className="section-heading"><div><span className="kicker plain">Browse by location</span><h2>Explore recovery resources by state</h2><p>We only index location pages when they contain useful, reviewed listings.</p></div><Link className="text-link" href="/locations" prefetch={false}>All locations <ArrowRight size={17} /></Link></div>
           <div className="state-grid">{featuredStates.map((state) => <Link key={state.code} href={`/locations/${state.slug}`} prefetch={false}><MapPinned size={18} /><span>{state.name}</span><ArrowRight size={16} /></Link>)}</div>
+        </div>
+      </section>
+
+      <section className="section section-tint">
+        <div className="shell">
+          <div className="section-heading"><div><span className="kicker plain">Insurance</span><h2>Find centers that accept your insurance</h2><p>Coverage is often the first question. Start with your insurer, then confirm benefits directly before you decide.</p></div><Link className="text-link" href="/insurance" prefetch={false}>All insurance options <ArrowRight size={17} /></Link></div>
+          <div className="state-grid">{insurers.map((insurer) => <Link key={insurer.slug} href={`/insurance/${insurer.slug}`} prefetch={false}><ShieldCheck size={18} /><span>{insurer.name}</span><ArrowRight size={16} /></Link>)}</div>
         </div>
       </section>
 
