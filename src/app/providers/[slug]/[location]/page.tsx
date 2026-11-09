@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
-import { getLifeStanceLocationMetadata } from "@/lib/provider-metadata";
-import { fitSeoDescription, fitSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
+import { getProviderCtrMetadata } from "@/lib/provider-metadata";
+import { fitSeoDescription, fitSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
 import { getProviderByCanonicalPath, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
 
 export const revalidate = 3600;
@@ -11,10 +11,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug, location } = await params;
   const provider = await getProviderByCanonicalPath(slug, location);
   if (!provider) return {};
-  const ctrMetadata = getLifeStanceLocationMetadata(provider);
+  const ctrMetadata = getProviderCtrMetadata(provider);
   return {
-    title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getProviderSeoTitle(provider) },
-    description: ctrMetadata ? fitSeoDescription(ctrMetadata.description) : getProviderSeoDescription(provider),
+    title: { absolute: fitSeoTitle(ctrMetadata.title) },
+    description: fitSeoDescription(ctrMetadata.description),
     alternates: { canonical: providerPath(provider) },
     robots: { index: isProviderIndexable(provider), follow: true },
     openGraph: provider.featuredImageUrl ? { images: [{ url: provider.featuredImageUrl }] } : undefined,

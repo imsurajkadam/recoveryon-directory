@@ -9,7 +9,10 @@ import { ProviderCard } from "@/components/provider-card";
 import { states } from "@/lib/content";
 import { stateEditorial } from "@/lib/state-editorial";
 import { EDITORIAL_REVIEWED_ON, editorialAuthor, editorialSources } from "@/lib/editorial-trust";
-import { hasPublishedProviders, providerPath, searchProviders } from "@/lib/providers";
+import { providerPath, searchProviders } from "@/lib/providers";
+import { buildFaqPageJsonLd, getStateFaqs } from "@/lib/faq-schema";
+import { FaqSection } from "@/components/faq-section";
+import { fitSeoDescription, fitSeoTitle } from "@/lib/provider-seo";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -20,8 +23,14 @@ export async function generateMetadata({ params }: { params: Promise<{ state: st
   const { state: slug } = await params;
   const state = states.find((item) => item.slug === slug);
   if (!state) return {};
-  const hasListings = await hasPublishedProviders({ state: state.code });
-  return { title: `Treatment resources in ${state.name}`, description: `Find and compare published addiction treatment, detox, mental health, and recovery resources in ${state.name}. Verify licensing, services, and insurance.`, alternates: { canonical: `/locations/${state.slug}` }, robots: { index: hasListings, follow: true } };
+  const { total } = await searchProviders({ state: state.code, pageSize: 1 });
+  const count = total > 0 ? `${total.toLocaleString("en-US")} ` : "";
+  return {
+    title: { absolute: fitSeoTitle(`Compare ${count}Addiction Treatment Centers in ${state.name}`) },
+    description: fitSeoDescription(`Compare ${count}addiction treatment centers in ${state.name}, with verified contacts, insurance info, and cost guidance to help you choose.`),
+    alternates: { canonical: `/locations/${state.slug}` },
+    robots: { index: total > 0, follow: true },
+  };
 }
 
 export default async function StatePage({ params, searchParams }: { params: Promise<{ state: string }>; searchParams: Promise<{ page?: string }> }) {
@@ -42,9 +51,11 @@ export default async function StatePage({ params, searchParams }: { params: Prom
     })),
   } : null;
   const editorialJsonLd = { "@context": "https://schema.org", "@type": "WebPage", name: `Treatment and recovery resources in ${state.name}`, dateModified: EDITORIAL_REVIEWED_ON, author: { "@type": "Organization", name: editorialAuthor.name, url: absoluteUrl(editorialAuthor.url) }, citation: editorialSources.map((source) => source.href), mainEntityOfPage: absoluteUrl(`/locations/${state.slug}`) };
+  const faqs = getStateFaqs(state.name, result.total, editorial);
   return <>
     <JsonLd data={editorialJsonLd} />
     {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
+    {faqs.length ? <JsonLd data={buildFaqPageJsonLd(faqs)} /> : null}
     <section className="page-hero"><div className="shell">
       <div className="breadcrumb"><Link href="/locations" prefetch={false}>Locations</Link><span>/</span><span>{state.name}</span></div>
       <h1>Treatment and recovery resources in {state.name}</h1>
@@ -57,6 +68,7 @@ export default async function StatePage({ params, searchParams }: { params: Prom
       <p>{editorial.intro}</p>
       {editorial.sections.map((section) => <section key={section.heading}><h3>{section.heading}</h3><p>{section.body}</p></section>)}
     </div></section> : null}
+    <FaqSection faqs={faqs} />
     <section className="section" id="listings"><div className="shell">{result.providers.length ? <>
       <div className="results-heading"><div><h2>{result.total.toLocaleString()} listings in {state.name}</h2><p>Showing {result.providers.length} listings on this page. Use the advanced directory filters to narrow by insurance, level of care, and specialty.</p></div></div>
       <div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div>
