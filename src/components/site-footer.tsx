@@ -15,6 +15,7 @@ export function SiteFooter() {
           <Link href="/directory" prefetch={false}>Find care</Link>
           <Link href="/care" prefetch={false}>Types of care</Link>
           <Link href="/locations" prefetch={false}>Browse locations</Link>
+          <Link href="/insurance" prefetch={false}>Insurance</Link>
           <Link href="/guides" prefetch={false}>Guides</Link>
         </div>
         <div>

@@ -1,4 +1,5 @@
 import { careCategories } from "@/lib/content";
+import { insurers } from "@/lib/insurance-data";
 import { getDirectoryFacets } from "@/lib/providers";
 import { absoluteUrl } from "@/lib/site";
 import { sitemapResponse } from "@/lib/sitemap-xml";
@@ -22,6 +23,7 @@ const staticPages = [
   ["/privacy", "2026-10-17", 0.3],
   ["/terms", "2026-09-28", 0.3],
   ["/compare", "2026-10-18", 0.6],
+  ["/insurance", "2026-11-09", 0.8],
 ] as const;
 
 export async function GET() {
@@ -33,6 +35,9 @@ export async function GET() {
     })),
     ...populatedCategories.map((category) => ({
       loc: absoluteUrl(`/care/${category.slug}`), lastmod: "2026-10-24", changefreq: "monthly" as const, priority: 0.7,
+    })),
+    ...insurers.map((insurer) => ({
+      loc: absoluteUrl(`/insurance/${insurer.slug}`), lastmod: "2026-11-09", changefreq: "monthly" as const, priority: 0.7,
     })),
   ]);
 }
