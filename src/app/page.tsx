@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BookOpenCheck, Building2, Check, ClipboardCheck, HeartHandshake, MapPinned, PhoneCall, SearchCheck, ShieldCheck } from "lucide-react";
 import { SearchForm } from "@/components/search-form";
 import { careCategories, featuredStateCodes, guides, states } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: { absolute: "Find and Compare Addiction Treatment Centers in the US" },
+  description: "Compare addiction treatment, detox, and mental health centers in all 50 states, with services, insurance, costs, and contact details. Free for families.",
+  alternates: { canonical: "/" },
+};
 
 const categoryIcons = [Building2, ShieldCheck, HeartHandshake, BookOpenCheck, MapPinned, SearchCheck, ClipboardCheck, BadgeCheck];
 

@@ -9,7 +9,10 @@ import { ProviderCard } from "@/components/provider-card";
 import { careCategories } from "@/lib/content";
 import { careEditorial } from "@/lib/care-editorial";
 import { EDITORIAL_REVIEWED_ON, editorialAuthor, editorialSources } from "@/lib/editorial-trust";
-import { hasPublishedProviders, providerPath, searchProviders } from "@/lib/providers";
+import { providerPath, searchProviders } from "@/lib/providers";
+import { buildFaqPageJsonLd, getCareFaqs } from "@/lib/faq-schema";
+import { FaqSection } from "@/components/faq-section";
+import { fitSeoDescription, fitSeoTitle } from "@/lib/provider-seo";
 import { absoluteUrl } from "@/lib/site";
 
 export function generateStaticParams() { return careCategories.map((category) => ({ category: category.slug })); }
@@ -18,12 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   const { category: slug } = await params;
   const category = careCategories.find((item) => item.slug === slug);
   if (!category) return {};
-  const hasListings = await hasPublishedProviders({ category: category.name });
+  const { total } = await searchProviders({ category: category.name, pageSize: 1 });
+  const count = total > 0 ? `${total.toLocaleString("en-US")} ` : "";
   return {
-    title: `${category.name}: compare options`,
-    description: `${category.description} Compare providers, verify licensing, and find the right fit on TreatmentLane.`,
+    title: { absolute: fitSeoTitle(`Compare ${count}${category.name}: Costs & Insurance`) },
+    description: fitSeoDescription(`${category.description} Compare ${count}listings, with costs and insurance explained.`),
     alternates: { canonical: `/care/${category.slug}` },
-    robots: { index: hasListings, follow: true },
+    robots: { index: total > 0, follow: true },
   };
 }
 
@@ -45,5 +49,6 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     })),
   } : null;
   const editorialJsonLd = { "@context": "https://schema.org", "@type": "MedicalWebPage", name: category.name, description: category.description, dateModified: EDITORIAL_REVIEWED_ON, author: { "@type": "Organization", name: editorialAuthor.name, url: absoluteUrl(editorialAuthor.url) }, citation: editorialSources.map((source) => source.href), mainEntityOfPage: absoluteUrl(`/care/${category.slug}`) };
-  return <><JsonLd data={editorialJsonLd} />{itemListJsonLd && <JsonLd data={itemListJsonLd} />}<section className="page-hero"><div className="shell"><div className="breadcrumb"><Link href="/care" prefetch={false}>Types of care</Link><span>/</span><span>{category.name}</span></div><h1>{category.name}</h1><p>{category.description}</p></div></section><div className="shell detail-grid"><article className="prose"><EditorialTrust /><h2>What to know</h2><p>{category.guidance}</p>{editorial ? <><p>{editorial.intro}</p>{editorial.sections.map((section) => <section key={section.heading}><h3>{section.heading}</h3><p>{section.body}</p></section>)}</> : null}<h2>Questions worth asking</h2><ul><li>Who provides clinical oversight, and what credentials do they hold?</li><li>Which services are included, and which are billed separately?</li><li>How are emergencies, transfers, and aftercare handled?</li><li>How can licensing, accreditation, and insurance status be confirmed?</li></ul><div className="notice">TreatmentLane does not determine clinical suitability. Confirm important details directly and seek a professional assessment when appropriate.</div></article><aside className="detail-sidebar"><h2>Explore this category</h2><p>{result.total.toLocaleString()} published {result.total === 1 ? "listing" : "listings"}</p><Link className="button" href={`/directory?category=${encodeURIComponent(category.name)}`} prefetch={false}>Search directory</Link></aside></div><section className="section section-tint"><div className="shell">{result.providers.length ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname={`/care/${category.slug}`} page={result.page} totalPages={result.totalPages} /></> : <div className="empty-state"><SearchX size={36} /><h2>Listings are being added</h2><p>Suggest an organization for review and inclusion.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}</div></section></>;
+  const faqs = getCareFaqs(category.name, category.shortName, category.guidance, result.total, editorial);
+  return <><JsonLd data={editorialJsonLd} />{itemListJsonLd && <JsonLd data={itemListJsonLd} />}{faqs.length ? <JsonLd data={buildFaqPageJsonLd(faqs)} /> : null}<section className="page-hero"><div className="shell"><div className="breadcrumb"><Link href="/care" prefetch={false}>Types of care</Link><span>/</span><span>{category.name}</span></div><h1>{category.name}</h1><p>{category.description}</p></div></section><div className="shell detail-grid"><article className="prose"><EditorialTrust /><h2>What to know</h2><p>{category.guidance}</p>{editorial ? <><p>{editorial.intro}</p>{editorial.sections.map((section) => <section key={section.heading}><h3>{section.heading}</h3><p>{section.body}</p></section>)}</> : null}<h2>Questions worth asking</h2><ul><li>Who provides clinical oversight, and what credentials do they hold?</li><li>Which services are included, and which are billed separately?</li><li>How are emergencies, transfers, and aftercare handled?</li><li>How can licensing, accreditation, and insurance status be confirmed?</li></ul><div className="notice">TreatmentLane does not determine clinical suitability. Confirm important details directly and seek a professional assessment when appropriate.</div></article><aside className="detail-sidebar"><h2>Explore this category</h2><p>{result.total.toLocaleString()} published {result.total === 1 ? "listing" : "listings"}</p><Link className="button" href={`/directory?category=${encodeURIComponent(category.name)}`} prefetch={false}>Search directory</Link></aside></div><FaqSection faqs={faqs} /><section className="section section-tint"><div className="shell">{result.providers.length ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname={`/care/${category.slug}`} page={result.page} totalPages={result.totalPages} /></> : <div className="empty-state"><SearchX size={36} /><h2>Listings are being added</h2><p>Suggest an organization for review and inclusion.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}</div></section></>;
 }

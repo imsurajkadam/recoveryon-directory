@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ProviderCard } from "@/components/provider-card";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
-import { getLifeStanceLocationMetadata, getLifeStanceOrganizationMetadata } from "@/lib/provider-metadata";
-import { fitSeoDescription, fitSeoTitle, getOrganizationSeoTitle, getProviderSeoDescription, getProviderSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
+import { getOrganizationCtrMetadata, getProviderCtrMetadata } from "@/lib/provider-metadata";
+import { fitSeoDescription, fitSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
 import { getProviderByLegacySlug, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
 
 export const revalidate = 3600;
@@ -17,21 +17,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!providers.length) return {};
   if (providers.length === 1) {
     const provider = providers[0];
-    const ctrMetadata = getLifeStanceLocationMetadata(provider);
+    const ctrMetadata = getProviderCtrMetadata(provider);
     return {
-      title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getProviderSeoTitle(provider) },
-      description: ctrMetadata ? fitSeoDescription(ctrMetadata.description) : getProviderSeoDescription(provider),
+      title: { absolute: fitSeoTitle(ctrMetadata.title) },
+      description: fitSeoDescription(ctrMetadata.description),
       alternates: { canonical: providerPath(provider) },
       robots: { index: isProviderIndexable(provider), follow: true },
       openGraph: provider.featuredImageUrl ? { images: [{ url: provider.featuredImageUrl }] } : undefined,
     };
   }
   const name = providers[0].name;
-  const ctrMetadata = getLifeStanceOrganizationMetadata(slug, providers.length);
+  const ctrMetadata = getOrganizationCtrMetadata(slug, name, providers.length);
   const hasIndexableLocation = providers.some(isProviderIndexable);
   return {
-    title: { absolute: ctrMetadata ? fitSeoTitle(ctrMetadata.title) : getOrganizationSeoTitle(name) },
-    description: fitSeoDescription(ctrMetadata?.description || `View published ${name} locations, services, source details, and verification status on TreatmentLane.`),
+    title: { absolute: fitSeoTitle(ctrMetadata.title) },
+    description: fitSeoDescription(ctrMetadata.description),
     alternates: { canonical: `/providers/${slug}` },
     robots: { index: hasIndexableLocation, follow: true },
   };
