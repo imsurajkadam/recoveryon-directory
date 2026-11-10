@@ -49,7 +49,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
       <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`} prefetch={false}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
       <div className="provider-hero-copy">
         <div>{provider.isSponsored && <span className="kicker plain">Featured listing</span>}<h1>{provider.name}</h1><p><MapPin size={18} /> {provider.city}, {provider.state}</p></div>
-        <details className="provider-hero-status verification-badge">
+        <details className={`provider-hero-status verification-badge${provider.verificationStatus === "provider-confirmed" || provider.verificationStatus === "independently-reviewed" ? " is-confirmed" : ""}`}>
           <summary><BadgeCheck size={18} /> {verificationLabels[provider.verificationStatus]}</summary>
           <div className="verification-details">
             <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "The provider confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? "We verified this data against public records and source documents." : "This listing is compiled from public source data and has not yet been independently verified."}</p>
@@ -58,6 +58,8 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
         </details>
       </div>
     </div></section>
+
+    {provider.verificationStatus === "provider-confirmed" && <section className="shell"><div className="claimed-banner"><BadgeCheck size={22} /><p><strong>This listing has been claimed by {provider.name}.</strong> The provider confirmed their details directly with TreatmentLane{provider.lastVerifiedAt ? ` on ${new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "long" })}` : ""}, so the contact details on this page are the ones they asked us to show.</p></div></section>}
 
     {gallery.length > 0 && <section className="shell provider-gallery-wrap">
       <div className={`provider-gallery gallery-count-${Math.min(gallery.length, 5)}`}>
@@ -70,7 +72,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
     <div className="shell provider-detail-grid">
       <main className="provider-content">
-        <div className="notice"><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider. <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>
+        <div className="notice">{provider.verificationStatus === "provider-confirmed" ? <><strong>Provider confirmed.</strong> This provider has claimed this listing and confirmed the details below directly with TreatmentLane.</> : provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>
 
         {provider.isSponsored && <div className="featured-profile-notice"><strong>Featured profile.</strong> This organization pays a flat monthly fee for enhanced placement, a longer profile, and photos. Payment does not affect its verification status.</div>}
 
