@@ -140,7 +140,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>
-          <p>Represent this organization? <Link href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}>Claim this listing</Link>. See inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
+          <p>{provider.verificationStatus === "provider-confirmed" ? <>This listing has been claimed and its contact details were confirmed by {provider.name}.</> : <>Represent this organization? <Link href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}>Claim this listing</Link>.</>} See inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
         </section>
       </main>
 
@@ -155,7 +155,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <dt>Last reviewed</dt><dd>{provider.lastVerifiedAt ? new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "medium" }) : "Not independently reviewed"}</dd>
         </dl>
         {provider.phone && <TrackedContactLink className="button provider-call-button" href={`tel:${provider.phone}`}><Phone size={17} /> Call organization</TrackedContactLink>}
-        <Link className="button button-secondary provider-claim-button" href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}><BadgeCheck size={17} /> Claim this listing</Link>
+        {provider.verificationStatus !== "provider-confirmed" && <Link className="button button-secondary provider-claim-button" href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}><BadgeCheck size={17} /> Claim this listing</Link>}
         <p className="form-disclaimer">TreatmentLane does not recommend or guarantee any provider. In an emergency, call 911 or 988.</p>
       </aside>
     </div>
