@@ -3,6 +3,7 @@ import { VerifiedTick } from "@/components/verified-tick";
 import Link from "next/link";
 import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, MapPinned, Phone, Star } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
+import { buildFaqPageJsonLd, getProviderFaqs } from "@/lib/faq-schema";
 import { ProviderReviews } from "@/components/provider-reviews";
 import { TrackedContactLink } from "@/components/tracked-contact-link";
 import { providerPath } from "@/lib/providers";
@@ -22,7 +23,7 @@ function InformationTags({ items }: { items: string[] }) {
   return <div className="information-tags">{items.map((item) => <span key={item}>{item}</span>)}</div>;
 }
 
-export function ProviderDetailPage({ provider, organizationProviders = [provider] }: { provider: Provider; organizationProviders?: Provider[] }) {
+export function ProviderDetailPage({ provider, organizationProviders = [provider], nearbyProviders = [] }: { provider: Provider; organizationProviders?: Provider[]; nearbyProviders?: Provider[] }) {
   const gallery = unique(provider.isSponsored && provider.featuredImageUrl
     ? [provider.featuredImageUrl, ...provider.imageUrls]
     : provider.imageUrls).slice(0, 5);
@@ -35,6 +36,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
   const ratingCount = provider.sourceRatingCount;
   const mapQuery = [provider.address, provider.city, provider.state, provider.postalCode].filter(Boolean).join(", ");
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
+  const faqs = getProviderFaqs(provider);
   const jsonLd = {
     "@context": "https://schema.org", "@type": "MedicalBusiness", name: provider.name,
     url: absoluteUrl(path), telephone: provider.phone || undefined,
@@ -47,6 +49,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
   return <>
     <JsonLd data={jsonLd} />
+    {faqs.length ? <JsonLd data={buildFaqPageJsonLd(faqs)} /> : null}
     <section className={`provider-hero${isVerified ? " is-verified" : ""}`}><div className="shell">
       <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`} prefetch={false}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
       <div className="provider-hero-copy">
@@ -139,6 +142,22 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
         </section>
 
         <ProviderReviews providerId={provider.id} providerName={provider.name} />
+
+        {faqs.length > 0 && <section className="listing-section">
+          <span className="section-label">Questions</span><h2>Frequently asked questions about {provider.name}</h2>
+          {faqs.map((faq) => <section key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></section>)}
+        </section>}
+
+        {nearbyProviders.length > 0 && <section className="listing-section">
+          <span className="section-label">Nearby options</span><h2>Other providers near {provider.city}, {provider.state}</h2>
+          <p>Compare other published providers in the same area. Confirm services, licensing, insurance, and availability directly with each provider.</p>
+          <div className="provider-location-grid">
+            {nearbyProviders.map((nearby) => {
+              const primaryType = unique([...nearby.treatmentTypes, ...nearby.levelsOfCare, ...nearby.categories])[0];
+              return <Link className="provider-location-link" href={providerPath(nearby)} key={nearby.id} prefetch={false}><MapPin size={18} /><span><strong>{nearby.name}</strong><small>{nearby.city}, {nearby.state}{primaryType ? ` - ${primaryType}` : ""}</small></span></Link>;
+            })}
+          </div>
+        </section>}
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>

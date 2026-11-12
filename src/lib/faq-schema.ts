@@ -1,3 +1,5 @@
+import type { Provider } from "@/lib/types";
+
 export type FaqEntry = { question: string; answer: string };
 
 type EditorialContent = { intro: string; sections: { heading: string; body: string }[] };
@@ -69,6 +71,56 @@ export function getCareFaqs(categoryName: string, shortName: string, guidance: s
     faqs.push({
       question: `How many ${shortName.toLowerCase()} listings are on TreatmentLane?`,
       answer: `TreatmentLane lists ${total.toLocaleString("en-US")} published ${categoryName.toLowerCase()} listings across the United States. Compare services, licensing, and insurance information, then confirm details directly with the provider.`,
+    });
+  }
+  return faqs;
+}
+
+function formatFaqList(values: string[], limit = 10): string {
+  if (values.length <= limit) return values.join(", ");
+  return `${values.slice(0, limit).join(", ")}, and more`;
+}
+
+// Build FAQs only from the provider's own stored data. A question is
+// omitted entirely when the field it answers is empty.
+export function getProviderFaqs(provider: Provider): FaqEntry[] {
+  const faqs: FaqEntry[] = [];
+  const careOptions = [...provider.levelsOfCare, ...provider.treatmentTypes].filter(
+    (item, index, items) => items.indexOf(item) === index,
+  );
+  if (careOptions.length) {
+    faqs.push({
+      question: `What levels of care does ${provider.name} offer?`,
+      answer: `${provider.name} lists ${formatFaqList(careOptions)} among its treatment types and levels of care. Confirm the recommended level of care and current availability directly with the provider.`,
+    });
+  }
+  if (provider.insurance.length) {
+    faqs.push({
+      question: `What insurance does ${provider.name} accept?`,
+      answer: `${provider.name} lists ${formatFaqList(provider.insurance)} as accepted insurance. Insurance participation changes. Verify network status, authorization requirements, and expected out-of-pocket cost with both the provider and your insurer before admission.`,
+    });
+  }
+  const place = [provider.address, `${provider.city}, ${provider.state}${provider.postalCode ? ` ${provider.postalCode}` : ""}`]
+    .filter(Boolean)
+    .join(", ");
+  faqs.push({
+    question: `Where is ${provider.name} located?`,
+    answer: `${provider.name} is located at ${place}. Use the map link on this page for directions.`,
+  });
+  if (provider.phone && provider.website) {
+    faqs.push({
+      question: `How do I contact ${provider.name}?`,
+      answer: `You can call ${provider.name} at ${provider.phone}, or visit its official website using the link on this page.`,
+    });
+  } else if (provider.phone) {
+    faqs.push({
+      question: `How do I contact ${provider.name}?`,
+      answer: `You can call ${provider.name} at ${provider.phone}.`,
+    });
+  } else if (provider.website) {
+    faqs.push({
+      question: `How do I contact ${provider.name}?`,
+      answer: `You can reach ${provider.name} through its official website using the link on this page.`,
     });
   }
   return faqs;

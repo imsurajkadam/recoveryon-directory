@@ -849,6 +849,108 @@ export const stateEditorial: Record<string, { intro: string; sections: { heading
       },
     ],
   },
+  "district-of-columbia": {
+    intro: "The District of Columbia is not a state, and its treatment system is run locally rather than through a state agency. That makes the exact licensing authority and payment rules different from neighboring Maryland and Virginia, so verify each detail for the specific address before choosing a program.",
+    sections: [
+      {
+        heading: "Licensing and oversight",
+        body: "Addiction treatment providers in the District are licensed and overseen locally. Ask the provider which District agency licenses its program and level of care, and verify the license directly with that agency before admission. A professional license held by a clinician, or accreditation from a national body, does not replace the program license when one is required. Opioid treatment programs must also meet federal certification and controlled substance rules. Verify the license for the exact address and service rather than only the parent organization.",
+      },
+      {
+        heading: "Paying for treatment",
+        body: "Medicaid in the District covers eligible substance use disorder services, but covered services, authorization rules, and participating providers depend on the enrollee's plan. Call the plan with the provider's legal name, address, and recommended service to confirm network status and authorization before admission. Private insurance must cover addiction treatment comparably to other medical care under federal parity rules, but network status still varies by plan and service. Ask for a written estimate and confirm what is billed separately, including medications, laboratory work, and transportation.",
+      },
+      {
+        heading: "Questions to ask providers",
+        body: "Ask for the program's license number and the District agency that issued it, and verify both before visiting. Ask which levels of care are provided on site versus referred elsewhere. Confirm whether the program bills Medicaid or your private insurer directly, and whether prior authorization is required. Ask which medications for opioid or alcohol use disorder are available on site. Ask what a typical day looks like, who is present after hours, and what aftercare is arranged after discharge.",
+      },
+    ],
+  },
+  "puerto-rico": {
+    intro: "Puerto Rico operates its own health and behavioral health system, and licensing and payment rules differ from the states. Many providers serve people in Spanish, so ask about language, licensing, and coverage for the specific program before choosing one.",
+    sections: [
+      {
+        heading: "Licensing and oversight",
+        body: "Addiction treatment providers in Puerto Rico are licensed under local rules, and the responsible agency and license type can vary by program and setting. Ask the provider which agency licenses it for the recommended level of care, and verify the license with that agency. A clinician license or national accreditation does not replace the program license when one is required. Opioid treatment programs must also meet federal certification and controlled substance rules. Verify the license for the exact address and service.",
+      },
+      {
+        heading: "Paying for treatment",
+        body: "Medicaid in Puerto Rico operates under local rules that differ from the states, so covered services and participating providers vary. Call the plan with the provider's legal name, address, and recommended service to confirm coverage and authorization before admission. Private insurance must cover addiction treatment comparably to other medical care under federal parity rules, but network status still varies by plan and service. Ask for a written estimate and confirm what is billed separately, including medications, laboratory work, and transportation.",
+      },
+      {
+        heading: "Questions to ask providers",
+        body: "Ask for the program's license number and the agency that issued it, and verify both. Ask which levels of care are provided on site and whether services are offered in Spanish, English, or both. Confirm insurance network status and authorization in writing before admission. Ask which medications for opioid or alcohol use disorder are available on site. Ask what happens after discharge, including aftercare, recovery support, and help finding care if you travel.",
+      },
+    ],
+  },
+  guam: {
+    intro: "Guam is a U.S. territory with its own local health system, and the number of treatment providers on the island is small. Start by checking which levels of care are available locally, and ask what happens when a recommended level of care is not offered on Guam.",
+    sections: [
+      {
+        heading: "Licensing and oversight",
+        body: "Addiction treatment providers on Guam are regulated locally, and licensing requirements vary by program and setting. Ask the provider which local agency licenses it for the recommended level of care, and verify the license with that agency. A clinician license or national accreditation does not replace the program license when one is required. Opioid treatment programs must also meet federal certification and controlled substance rules. Verify the license for the exact address and service.",
+      },
+      {
+        heading: "Paying for treatment",
+        body: "Medicaid on Guam operates under territorial rules that differ from the states, so covered services and participating providers vary. Call the plan with the provider's legal name, address, and recommended service to confirm coverage and authorization before admission. Private insurance must cover addiction treatment comparably to other medical care under federal parity rules, but network status still varies by plan and service. Ask for a written estimate and confirm what is billed separately, including medications, laboratory work, and transportation.",
+      },
+      {
+        heading: "Questions to ask providers",
+        body: "Ask for the program's license number and the agency that issued it, and verify both. Ask which levels of care are provided on site and what happens when a service is not available on the island. Confirm insurance coverage and authorization in writing before admission. Ask which medications for opioid or alcohol use disorder are available on site. Ask how aftercare works when follow-up care must be arranged off island.",
+      },
+    ],
+  },
+  "american-samoa": {
+    intro: "American Samoa is a U.S. territory with its own local health system, and treatment options in the territory are limited. Start by checking which services are available locally, and ask how the provider helps arrange care elsewhere when a recommended level of care is not offered in the territory.",
+    sections: [
+      {
+        heading: "Licensing and oversight",
+        body: "Addiction treatment providers in American Samoa are regulated locally, and licensing requirements vary by program and setting. Ask the provider which local agency licenses it for the recommended level of care, and verify the license with that agency. A clinician license or national accreditation does not replace the program license when one is required. Opioid treatment programs must also meet federal certification and controlled substance rules. Verify the license for the exact address and service.",
+      },
+      {
+        heading: "Paying for treatment",
+        body: "Medicaid in American Samoa operates under territorial rules that differ from the states, so covered services and participating providers vary. Call the plan with the provider's legal name, address, and recommended service to confirm coverage and authorization before admission. Private insurance must cover addiction treatment comparably to other medical care under federal parity rules, but network status still varies by plan and service. Ask for a written estimate and confirm what is billed separately, including medications, laboratory work, and transportation.",
+      },
+      {
+        heading: "Questions to ask providers",
+        body: "Ask for the program's license number and the agency that issued it, and verify both. Ask which services are provided locally and how the provider helps arrange care elsewhere when a level of care is not available in the territory. Confirm insurance coverage and authorization in writing before admission. Ask which medications for opioid or alcohol use disorder are available on site. Ask how aftercare works when follow-up care must be arranged off island.",
+      },
+    ],
+  },
+  "northern-mariana-islands": {
+    intro: "The Northern Mariana Islands are a U.S. territory with their own local health system, and treatment options in the territory are limited. Start by checking which services are available locally, and ask how the provider helps arrange care elsewhere when a recommended level of care is not offered in the territory.",
+    sections: [
+      {
+        heading: "Licensing and oversight",
+        body: "Addiction treatment providers in the Northern Mariana Islands are regulated locally, and licensing requirements vary by program and setting. Ask the provider which local agency licenses it for the recommended level of care, and verify the license with that agency. A clinician license or national accreditation does not replace the program license when one is required. Opioid treatment programs must also meet federal certification and controlled substance rules. Verify the license for the exact address and service.",
+      },
+      {
+        heading: "Paying for treatment",
+        body: "Medicaid in the Northern Mariana Islands operates under territorial rules that differ from the states, so covered services and participating providers vary. Call the plan with the provider's legal name, address, and recommended service to confirm coverage and authorization before admission. Private insurance must cover addiction treatment comparably to other medical care under federal parity rules, but network status still varies by plan and service. Ask for a written estimate and confirm what is billed separately, including medications, laboratory work, and transportation.",
+      },
+      {
+        heading: "Questions to ask providers",
+        body: "Ask for the program's license number and the agency that issued it, and verify both. Ask which services are provided locally and how the provider helps arrange care elsewhere when a level of care is not available in the territory. Confirm insurance coverage and authorization in writing before admission. Ask which medications for opioid or alcohol use disorder are available on site. Ask how aftercare works when follow-up care must be arranged off island.",
+      },
+    ],
+  },
+  "u-s-virgin-islands": {
+    intro: "The U.S. Virgin Islands are a U.S. territory with their own local health system, and treatment options in the territory are limited. Start by checking which services are available locally, and ask how the provider helps arrange care elsewhere when a recommended level of care is not offered in the territory.",
+    sections: [
+      {
+        heading: "Licensing and oversight",
+        body: "Addiction treatment providers in the U.S. Virgin Islands are regulated locally, and licensing requirements vary by program and setting. Ask the provider which local agency licenses it for the recommended level of care, and verify the license with that agency. A clinician license or national accreditation does not replace the program license when one is required. Opioid treatment programs must also meet federal certification and controlled substance rules. Verify the license for the exact address and service.",
+      },
+      {
+        heading: "Paying for treatment",
+        body: "Medicaid in the U.S. Virgin Islands operates under territorial rules that differ from the states, so covered services and participating providers vary. Call the plan with the provider's legal name, address, and recommended service to confirm coverage and authorization before admission. Private insurance must cover addiction treatment comparably to other medical care under federal parity rules, but network status still varies by plan and service. Ask for a written estimate and confirm what is billed separately, including medications, laboratory work, and transportation.",
+      },
+      {
+        heading: "Questions to ask providers",
+        body: "Ask for the program's license number and the agency that issued it, and verify both. Ask which services are provided locally and how the provider helps arrange care elsewhere when a level of care is not available in the territory. Confirm insurance coverage and authorization in writing before admission. Ask which medications for opioid or alcohol use disorder are available on site. Ask how aftercare works when follow-up care must be arranged off island.",
+      },
+    ],
+  },
 };
 
 // SOURCES
@@ -1017,3 +1119,6 @@ export const stateEditorial: Record<string, { intro: string; sections: { heading
 // Wyoming:
 // - Wyoming substance use disorder provider certification: https://health.wyo.gov/behavioralhealth/mhsa/certification/
 // - Wyoming Medicaid behavioral health services rules: https://rules.wyo.gov/AjaxHandler.ashx?RULE_VERSION_ID=24889&handler=GetRuleVersionHTML
+// District of Columbia and territories (general guidance only; no single
+// regulator is named because licensing authority varies by jurisdiction):
+// - SAMHSA FindTreatment.gov: https://findtreatment.gov/
