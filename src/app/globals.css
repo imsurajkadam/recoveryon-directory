@@ -509,3 +509,9 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .near-me-local { border: 1px solid var(--line); border-radius: 16px; padding: 24px; background: var(--white); }
 .near-me-local.is-loading { color: var(--ink-soft); }
 .near-me-local small svg { vertical-align: -1px; }
+.near-me-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.near-me-search { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; background: var(--white); color: var(--ink-soft); }
+.near-me-search input { border: 0; outline: 0; flex: 1; min-height: 46px; font: inherit; color: var(--ink); background: transparent; }
+.near-me-controls .button svg { vertical-align: -3px; }
+.near-me-note { color: var(--ink-soft); margin: -8px 0 16px; font-size: .92rem; }
+.provider-location-grid.is-loading { opacity: .5; }

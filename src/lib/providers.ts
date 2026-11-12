@@ -170,6 +170,45 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
   }
 }
 
+export type NearbyFilter = { category?: string; levels?: string[] };
+
+/** Published listings nearest to a point (miles), using stored latitude/longitude. */
+export async function searchNearestProviders(lat: number, lng: number, filter: NearbyFilter, limit = 6): Promise<Array<Provider & { distanceMiles: number }>> {
+  const sql = getDatabase();
+  if (!sql || !Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+  const clauses = ["publication_status = 'published'", "latitude is not null", "longitude is not null"];
+  const params: (string | number)[] = [lat, lng];
+  const add = (value: string | number) => { params.push(value); return `$${params.length}`; };
+  if (filter.category) clauses.push(`${add(filter.category)} = any(categories)`);
+  if (filter.levels?.length) clauses.push(`(${filter.levels.map((level) => { const ref = add(level); return `${ref} = any(levels_of_care) or ${ref} = any(treatment_types)`; }).join(" or ")})`);
+  const distance = `(3958.8 * 2 * asin(sqrt(power(sin(radians(latitude - $1) / 2), 2) + cos(radians($1)) * cos(radians(latitude)) * power(sin(radians(longitude - $2) / 2), 2))))`;
+  const run = async (boxDegrees: number | null) => {
+    const box = boxDegrees ? ` and latitude between $1 - ${boxDegrees} and $1 + ${boxDegrees} and longitude between $2 - ${boxDegrees * 1.5} and $2 + ${boxDegrees * 1.5}` : "";
+    const rows = await sql.unsafe(
+      `select ${providerColumns}, ${distance} as distance_miles from providers where ${clauses.join(" and ")}${box}
+       order by distance_miles limit $${params.length + 1}`,
+      [...params, limit],
+    );
+    return rows.map((row) => ({ ...toProvider(row as unknown as ProviderRow), distanceMiles: Number(row.distance_miles) }));
+  };
+  try {
+    const near = await run(2);
+    return near.length ? near : await run(null);
+  } catch (error) { console.error("Nearest provider search failed", error); throw error; }
+}
+
+/** Center point for a US ZIP code, taken from listings in that ZIP. */
+export async function getZipCenter(zip: string): Promise<{ lat: number; lng: number; city: string; state: string } | null> {
+  const sql = getDatabase();
+  if (!sql || !/^\d{5}$/.test(zip)) return null;
+  try {
+    const rows = await sql`select avg(latitude) as lat, avg(longitude) as lng, min(city) as city, min(state) as state
+      from providers where publication_status = 'published' and left(postal_code, 5) = ${zip} and latitude is not null`;
+    const row = rows[0];
+    return row?.lat ? { lat: Number(row.lat), lng: Number(row.lng), city: String(row.city), state: String(row.state) } : null;
+  } catch (error) { console.error("ZIP center lookup failed", error); return null; }
+}
+
 const getProviderByLegacySlugCached = unstable_cache(async (slug: string): Promise<Provider | null> => {
   const sql = getDatabase();
   if (!sql) return null;
