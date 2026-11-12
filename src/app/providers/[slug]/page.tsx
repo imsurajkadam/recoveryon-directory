@@ -53,16 +53,16 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
     return <ProviderDetailPage provider={providers[0]} organizationProviders={providers} nearbyProviders={nearbyProviders} />;
   }
 
-  const name = providers[0].name;
+  const name = topValues(providers.map((provider) => [provider.name]), 1)[0]?.label || providers[0].name;
   const byState = new Map<string, Provider[]>();
   for (const provider of providers) byState.set(provider.state, [...(byState.get(provider.state) || []), provider]);
   const stateGroups = [...byState.entries()]
     .map(([code, items]) => ({ code, name: stateByCode(code)?.name || code, items: items.sort((a, b) => a.city.localeCompare(b.city)) }))
     .sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name));
   const cityCount = new Set(providers.map((provider) => `${provider.state}|${provider.city}`)).size;
-  const careTypes = topValues(providers.flatMap((provider) => [...provider.levelsOfCare, ...provider.treatmentTypes]), 8);
-  const insurance = topValues(providers.flatMap((provider) => provider.insurance), 8);
-  const therapies = topValues(providers.flatMap((provider) => provider.therapies), 6);
+  const careTypes = topValues(providers.map((provider) => [...provider.levelsOfCare, ...provider.treatmentTypes]), 8);
+  const insurance = topValues(providers.map((provider) => provider.insurance), 8);
+  const therapies = topValues(providers.map((provider) => provider.therapies), 6);
   const verifiedCount = providers.filter((provider) => provider.verificationStatus === "provider-confirmed").length;
   const stateSummary = stateGroups.length === 1 ? stateGroups[0].name : `${stateGroups.length} states`;
   const url = absoluteUrl(`/providers/${slug}`);
@@ -115,14 +115,19 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
   </>;
 }
 
-function topValues(values: string[], limit: number) {
+/** Counts how many locations list each value (each location counted once per value). */
+function topValues(valuesPerLocation: string[][], limit: number) {
   const counts = new Map<string, { label: string; count: number }>();
-  for (const value of values) {
-    const label = value.trim();
-    if (!label) continue;
-    const key = label.toLowerCase();
-    const entry = counts.get(key);
-    if (entry) entry.count += 1; else counts.set(key, { label, count: 1 });
+  for (const values of valuesPerLocation) {
+    const seen = new Set<string>();
+    for (const value of values) {
+      const label = value.trim();
+      const key = label.toLowerCase();
+      if (!label || seen.has(key)) continue;
+      seen.add(key);
+      const entry = counts.get(key);
+      if (entry) entry.count += 1; else counts.set(key, { label, count: 1 });
+    }
   }
   return [...counts.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, limit);
 }

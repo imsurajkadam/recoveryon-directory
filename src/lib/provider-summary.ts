@@ -26,10 +26,16 @@ function pick<T>(options: T[], seed: number, salt: number) {
   return options[(seed + salt * 7919) % options.length];
 }
 
+const ACRONYMS = new Set(["mat", "iop", "php", "cbt", "dbt", "emdr", "lgbtq", "lgbtq+", "dui", "dwi", "va", "ptsd", "adhd", "ocd", "12-step", "aa", "na", "smart", "tms", "ect"]);
+
 function tidy(label: string) {
   const trimmed = label.trim().replace(/\s+/g, " ");
   // Keep acronyms (IOP, PHP, MAT, CBT, DBT, EMDR) and proper nouns; lowercase plain words.
-  return trimmed.split(" ").map((word) => (/^[A-Z0-9()&/-]{2,}$/.test(word) || /^\(?[A-Z]{2,}\)?$/.test(word) ? word : word.toLowerCase())).join(" ");
+  return trimmed.split(" ").map((word) => {
+    const bare = word.toLowerCase().replace(/[(),]/g, "");
+    if (ACRONYMS.has(bare) && bare !== "12-step") return word.toUpperCase();
+    return /^[A-Z0-9()&/-]{2,}$/.test(word) ? word : word.toLowerCase();
+  }).join(" ");
 }
 
 function unique(values: string[], lowercase = true) {
