@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { isSourceImage, sizedImageUrl } from "@/lib/images";
 import { buildProviderBlurb, hasTemplateDescription } from "@/lib/provider-summary";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Building2, MapPin, MapPinned, Star } from "lucide-react";
@@ -31,7 +32,7 @@ export function ProviderCard({ provider }: { provider: Provider }) {
       {provider.isSponsored && <FeaturedBadge />}
       <Link className="provider-card-media" href={href} aria-label={`View ${provider.name}`} prefetch={false}>
         {provider.featuredImageUrl
-          ? <Image src={provider.featuredImageUrl} alt={`${provider.name} facility`} fill sizes="(max-width: 760px) 100vw, 190px" />
+          ? <Image src={sizedImageUrl(provider.featuredImageUrl, 480, 360)} alt={`${provider.name} facility`} fill sizes="(max-width: 760px) 100vw, 190px" unoptimized={isSourceImage(provider.featuredImageUrl)} />
           : <span className="provider-card-placeholder" aria-hidden="true"><Building2 /></span>}
       </Link>
       <div className="provider-card-body">

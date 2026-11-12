@@ -1,4 +1,5 @@
 import "server-only";
+import { isSourceImage, rankImages } from "@/lib/images";
 
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
@@ -42,6 +43,7 @@ function normalizeProviderImageUrl(value: string | null) {
       return listingPlaceholderUrl;
     }
     if (url.hostname === "images.treatmentlane.com") return url.toString();
+    if (isSourceImage(url.toString())) return url.toString();
   } catch {
     return null;
   }
@@ -78,7 +80,7 @@ function toProvider(row: ProviderRow): Provider {
     categories: row.categories || [], levelsOfCare: row.levels_of_care || [], insurance: row.insurance || [],
     insuranceDetails: cleanSourceDetail(row.insurance_details), treatmentTypes: row.treatment_types || [], therapies: row.therapies || [],
     amenities: row.amenities || [], specialties: row.specialties || [], featuredImageUrl: normalizeProviderImageUrl(row.featured_image_url),
-    imageUrls: (row.image_urls || []).map((image) => normalizeProviderImageUrl(image)).filter((image): image is string => Boolean(image)), priceRange: row.price_range, treatmentDuration: row.treatment_duration,
+    imageUrls: rankImages((row.image_urls || []).map((image) => normalizeProviderImageUrl(image)).filter((image): image is string => Boolean(image))), priceRange: row.price_range, treatmentDuration: row.treatment_duration,
     sourceRatingValue: row.source_rating_value === null ? null : Number(row.source_rating_value), sourceRatingCount: row.source_rating_count,
     licenseSummary: row.license_summary, accreditation: row.accreditation || [], sourceUrl: row.source_url, lastVerifiedAt: row.last_verified_at,
     updatedAt: row.updated_at, evidenceScore: row.evidence_score, verificationStatus: row.verification_status,

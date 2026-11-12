@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { isPlaceholderImage, isSourceImage, sizedImageUrl } from "@/lib/images";
 import { cityCarePath, cityCareTypes, cityPath, isIndexedCityCarePage, stateByCode } from "@/lib/city-pages";
 import { buildProviderSummary, hasTemplateDescription } from "@/lib/provider-summary";
 import { VerifiedTick } from "@/components/verified-tick";
@@ -28,7 +29,7 @@ function InformationTags({ items }: { items: string[] }) {
 export function ProviderDetailPage({ provider, organizationProviders = [provider], nearbyProviders = [] }: { provider: Provider; organizationProviders?: Provider[]; nearbyProviders?: Provider[] }) {
   const gallery = unique(provider.isSponsored && provider.featuredImageUrl
     ? [provider.featuredImageUrl, ...provider.imageUrls]
-    : provider.imageUrls).slice(0, 5);
+    : provider.imageUrls).filter((image) => !isPlaceholderImage(image)).slice(0, 5);
   const careTypes = unique([...provider.treatmentTypes, ...provider.levelsOfCare, ...provider.categories]);
   const path = providerPath(provider);
   const isVerified = provider.verificationStatus === "provider-confirmed";
@@ -71,10 +72,12 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
     {gallery.length > 0 && <section className="shell provider-gallery-wrap">
       <div className={`provider-gallery gallery-count-${Math.min(gallery.length, 5)}`}>
         {gallery.map((image, index) => <div className="provider-gallery-image" key={image}>
-          <Image src={image} alt={`${provider.name} facility${index ? ` photo ${index + 1}` : ""}`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 65vw" : "(max-width: 760px) 50vw, 25vw"} priority={index === 0} />
+          <Image src={sizedImageUrl(image, index === 0 ? 1400 : 700, index === 0 ? 900 : 450)} alt={`${provider.name} facility${index ? ` photo ${index + 1}` : ""}`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 65vw" : "(max-width: 760px) 50vw, 25vw"} priority={index === 0} unoptimized={isSourceImage(image)} />
         </div>)}
       </div>
-      <p className="image-attribution"><Images size={14} /> Photos are hosted by TreatmentLane and may have been supplied by the organization. Confirm that photos are current before making a decision.</p>
+      <p className="image-attribution"><Images size={14} /> {gallery.some(isSourceImage)
+        ? <>Photos come from public listings for this organization and may not be current. {isVerified ? "" : <>Represent {provider.name}? <Link href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}>Claim the listing</Link> to add your own photos.</>}</>
+        : <>Photos are hosted by TreatmentLane and may have been supplied by the organization. Confirm that photos are current before making a decision.</>}</p>
     </section>}
 
     <div className={`shell provider-detail-grid${isVerified ? " is-verified" : ""}`}>
