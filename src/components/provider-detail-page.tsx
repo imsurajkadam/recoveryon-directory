@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { buildProviderSummary, hasTemplateDescription } from "@/lib/provider-summary";
 import { VerifiedTick } from "@/components/verified-tick";
 import Link from "next/link";
 import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, MapPinned, Phone, Star } from "lucide-react";
@@ -99,7 +100,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
         <section className="listing-section">
           <span className="section-label">Overview</span><h2>About {provider.name}</h2>
-          <p className="listing-lead">{provider.description || "Detailed information for this organization has not yet been published."}</p>
+          {hasTemplateDescription(provider) ? buildProviderSummary(provider).map((paragraph, index) => <p className={index === 0 ? "listing-lead" : "listing-summary"} key={index}>{paragraph}</p>) : <p className="listing-lead">{provider.description}</p>}
           {(provider.priceRange || provider.treatmentDuration || provider.sourceRatingValue !== null || careTypes.length > 0) && <div className="quick-facts">
             {careTypes.length > 0 && <div><Layers3 /><span>Primary type</span><strong>{careTypes[0]}</strong></div>}
             {provider.treatmentDuration && <div><Clock3 /><span>Typical duration</span><strong>{provider.treatmentDuration}</strong></div>}

@@ -92,6 +92,7 @@ export type ProviderSearch = {
   keyword?: string; location?: string; category?: string; state?: string; insurance?: string; level?: string; specialty?: string;
   sort?: ProviderSort; page?: number; pageSize?: number;
   verified?: boolean;
+  city?: string; levels?: string[];
 };
 export type ProviderSearchResult = { providers: Provider[]; total: number; page: number; totalPages: number };
 
@@ -146,6 +147,11 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
   }
   if (input.specialty?.trim()) clauses.push(`${add(input.specialty.trim())} = any(specialties)`);
   if (input.verified) clauses.push(`verification_status = 'provider-confirmed'`);
+  if (input.city?.trim()) clauses.push(`city = ${add(input.city.trim())}`);
+  if (input.levels?.length) {
+    const levelClauses = input.levels.map((level) => { const ref = add(level); return `(${ref} = any(levels_of_care) or ${ref} = any(treatment_types))`; });
+    clauses.push(`(${levelClauses.join(" or ")})`);
+  }
   const where = clauses.join(" and ");
   try {
     const countRows = await sql.unsafe(`select count(*)::int as count from providers where ${where}`, params);
@@ -248,6 +254,48 @@ const getStateTopCitiesCached = unstable_cache(async (stateCode: string): Promis
   } catch (error) { console.error("State city lookup failed", error); throw error; }
 }, ["state-top-cities"], { revalidate: 3600, tags: ["providers"] });
 export const getStateTopCities = cache(getStateTopCitiesCached);
+
+export type StateCity = { city: string; count: number };
+
+const getStateCitiesCached = unstable_cache(async (stateCode: string): Promise<StateCity[]> => {
+  const sql = getDatabase();
+  if (!sql) return [];
+  try {
+    const rows = await sql`select city, count(*)::int as count
+      from providers
+      where publication_status = 'published' and state = ${stateCode} and city is not null and city <> ''
+      group by city order by count desc, city`;
+    return rows.map((row) => ({ city: String(row.city), count: Number(row.count) }));
+  } catch (error) { console.error("State cities lookup failed", error); throw error; }
+}, ["state-cities"], { revalidate: 3600, tags: ["providers"] });
+export const getStateCities = cache(getStateCitiesCached);
+
+export type CityCount = { state: string; city: string; count: number; updatedAt: string };
+
+const getCitiesWithMinListingsCached = unstable_cache(async (minListings: number): Promise<CityCount[]> => {
+  const sql = getDatabase();
+  if (!sql) return [];
+  try {
+    const rows = await sql`select state, city, count(*)::int as count, max(updated_at) as updated_at
+      from providers
+      where publication_status = 'published' and city is not null and city <> ''
+      group by state, city having count(*) >= ${minListings}
+      order by count desc`;
+    return rows.map((row) => ({ state: String(row.state), city: String(row.city), count: Number(row.count), updatedAt: new Date(row.updated_at).toISOString().slice(0, 10) }));
+  } catch (error) { console.error("City list lookup failed", error); throw error; }
+}, ["cities-with-min-listings"], { revalidate: 86400, tags: ["providers"] });
+export const getCitiesWithMinListings = cache(getCitiesWithMinListingsCached);
+
+const getLatestProviderUpdateCached = unstable_cache(async (): Promise<string | null> => {
+  const sql = getDatabase();
+  if (!sql) return null;
+  try {
+    const rows = await sql`select max(updated_at) as updated_at from providers where publication_status = 'published'`;
+    return rows[0]?.updated_at ? new Date(rows[0].updated_at).toISOString().slice(0, 10) : null;
+  } catch (error) { console.error("Latest provider update lookup failed", error); return null; }
+}, ["latest-provider-update"], { revalidate: 86400, tags: ["providers"] });
+export const getLatestProviderUpdate = cache(getLatestProviderUpdateCached);
+
 
 export type StateCategoryCount = { category: string; count: number };
 

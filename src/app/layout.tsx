@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { JsonLd } from "@/components/json-ld";
+import { Analytics } from "@vercel/analytics/next";
 import { AnalyticsPageViews } from "@/components/analytics-page-views";
 import Script from "next/script";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -53,6 +54,7 @@ gtag('config', '${GA_MEASUREMENT_ID}', {
           </>
         )}
         {GA_MEASUREMENT_ID && <AnalyticsPageViews />}
+        <Analytics />
         <JsonLd data={organization} />
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteHeader />
