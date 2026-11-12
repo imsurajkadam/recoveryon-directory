@@ -515,3 +515,8 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .near-me-controls .button svg { vertical-align: -3px; }
 .near-me-note { color: var(--ink-soft); margin: -8px 0 16px; font-size: .92rem; }
 .provider-location-grid.is-loading { opacity: .5; }
+.checkbox-field { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 10px; font-size: .95rem; }
+.checkbox-field input { width: auto; margin-top: 4px; }
+.badge-embed { display: grid; gap: 20px; }
+.badge-preview { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); }
+.badge-code { width: 100%; min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #f7f9fb; color: var(--ink); }

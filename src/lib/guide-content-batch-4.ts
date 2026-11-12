@@ -188,8 +188,8 @@ export const guideBatch4: Guide[] = [
   }),
   makeGuide({
     slug: "what-to-pack-for-rehab",
-    title: "What to pack for rehab",
-    description: "Prepare for residential treatment with a facility-confirmed packing list covering identification, medication, clothing, communication, money, and prohibited items.",
+    title: "What to bring to rehab: a packing checklist",
+    description: "What to bring to rehab and what to leave at home: a facility-confirmed packing checklist covering identification, medication, clothing, toiletries, phones, money, and prohibited items.",
     expansions: [
       "policies can change, so reconfirm the list shortly before travel even when admission was arranged weeks earlier",
       "the folder should exclude passwords and unrelated records that would create unnecessary privacy or identity-theft risk",
