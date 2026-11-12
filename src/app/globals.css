@@ -9,6 +9,10 @@
   --line: #dce7e8;
   --white: #ffffff;
   --danger: #9f2f2f;
+  --verified: #1f5fbf;
+  --verified-dark: #174a96;
+  --verified-soft: #eef4fd;
+  --verified-line: #c9dbf5;
   --shadow: 0 18px 50px rgba(16, 42, 67, 0.08);
 }
 
@@ -409,8 +413,17 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .verification-badge summary { cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
 .verification-details { margin-top: 0.75rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; font-size: 0.9rem; }
 .verification-badge.is-confirmed { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
-.claimed-banner { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0 4px; padding: 16px 18px; border: 1px solid #b9ddd4; border-left: 5px solid var(--teal-dark); border-radius: 12px; background: #eef7f4; color: var(--teal-dark); }
-.claimed-banner svg { flex: 0 0 auto; margin-top: 2px; }
+.claimed-banner { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0 4px; padding: 16px 18px; border: 1px solid var(--verified-line); border-left: 5px solid var(--verified); border-radius: 12px; background: linear-gradient(90deg, var(--verified-soft), #f7faff); color: var(--verified-dark); box-shadow: 0 6px 18px rgba(31, 95, 191, 0.08); }
+.claimed-banner svg { flex: 0 0 auto; margin-top: 2px; color: var(--verified); }
+
+/* Provider-confirmed (claimed) listings get a distinct verified-blue treatment */
+.verification-badge.is-claimed { background: var(--verified); border-color: var(--verified); color: #fff; box-shadow: 0 0 0 3px rgba(31, 95, 191, 0.15); }
+.notice.is-claimed { background: var(--verified-soft); border-left-color: var(--verified); color: var(--verified-dark); }
+.notice.is-claimed strong { color: var(--verified-dark); }
+.notice.is-claimed a { color: var(--verified-dark); }
+.provider-contact-card.is-claimed { border-top: 4px solid var(--verified); }
+.provider-contact-card.is-claimed .listing-status { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 3px 10px; border-radius: 999px; background: var(--verified-soft); border: 1px solid var(--verified-line); color: var(--verified-dark); font-weight: 700; }
+.provider-contact-card.is-claimed .listing-status svg { color: var(--verified); }
 .claimed-banner p { margin: 0; line-height: 1.55; }
 
 /* Pricing */
