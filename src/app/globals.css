@@ -495,3 +495,4 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 @media (max-width: 760px) { .care-help { flex-direction: column; align-items: flex-start; } .care-help .button { margin-left: 0; } }
 @media (prefers-reduced-motion: reduce) { .care-card::before, .care-icon, .care-card .card-link svg { transition: none; } }
 
+.care-explainer { padding-bottom: 72px; }
