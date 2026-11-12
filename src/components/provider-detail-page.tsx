@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { VerifiedTick } from "@/components/verified-tick";
 import Link from "next/link";
 import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, MapPinned, Phone, Star } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
@@ -11,7 +12,7 @@ import type { Provider } from "@/lib/types";
 export const verificationLabels = {
   listed: "Directory listing",
   "data-verified": "TreatmentLane data verified",
-  "provider-confirmed": "Provider confirmed",
+  "provider-confirmed": "TreatmentLane Verified",
   "independently-reviewed": "Independently reviewed",
 };
 
@@ -27,6 +28,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
     : provider.imageUrls).slice(0, 5);
   const careTypes = unique([...provider.treatmentTypes, ...provider.levelsOfCare, ...provider.categories]);
   const path = providerPath(provider);
+  const isVerified = provider.verificationStatus === "provider-confirmed";
   const hasMultipleLocations = organizationProviders.length > 1;
   const sourceName = sourceDisplayName(provider.sourceUrl);
   const ratingValue = provider.sourceRatingValue;
@@ -45,21 +47,21 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
   return <>
     <JsonLd data={jsonLd} />
-    <section className="provider-hero"><div className="shell">
+    <section className={`provider-hero${isVerified ? " is-verified" : ""}`}><div className="shell">
       <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`} prefetch={false}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
       <div className="provider-hero-copy">
-        <div>{provider.isSponsored && <span className="kicker plain">Featured listing</span>}<h1>{provider.name}</h1><p><MapPin size={18} /> {provider.city}, {provider.state}</p></div>
+        <div>{provider.isSponsored && <span className="kicker plain">Featured listing</span>}{isVerified && <span className="kicker verified-kicker"><VerifiedTick size={16} /> TreatmentLane Verified provider</span>}<h1>{provider.name}{isVerified && <VerifiedTick size={40} className="verified-tick-title" />}</h1><p><MapPin size={18} /> {provider.city}, {provider.state}</p></div>
         <details className={`provider-hero-status verification-badge${provider.verificationStatus === "provider-confirmed" || provider.verificationStatus === "independently-reviewed" ? " is-confirmed" : ""}${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>
-          <summary><BadgeCheck size={18} /> {verificationLabels[provider.verificationStatus]}</summary>
+          <summary>{isVerified ? <VerifiedTick size={20} /> : <BadgeCheck size={18} />} {verificationLabels[provider.verificationStatus]}</summary>
           <div className="verification-details">
-            <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "The provider confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? "We verified this data against public records and source documents." : "This listing is compiled from public source data and has not yet been independently verified."}</p>
+            <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "This provider claimed its listing and confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? "We verified this data against public records and source documents." : "This listing is compiled from public source data and has not yet been independently verified."}</p>
             <p><Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link></p>
           </div>
         </details>
       </div>
     </div></section>
 
-    {provider.verificationStatus === "provider-confirmed" && <section className="shell"><div className="claimed-banner"><BadgeCheck size={22} /><p><strong>This listing has been claimed by {provider.name}.</strong> The provider confirmed their details directly with TreatmentLane{provider.lastVerifiedAt ? ` on ${new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "long" })}` : ""}, so the contact details on this page are the ones they asked us to show.</p></div></section>}
+    {provider.verificationStatus === "provider-confirmed" && <section className="shell"><div className="claimed-banner"><VerifiedTick size={30} /><p><strong>TreatmentLane Verified.</strong> This listing has been claimed by {provider.name}. The provider confirmed their details directly with TreatmentLane{provider.lastVerifiedAt ? ` on ${new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "long" })}` : ""}, so the contact details on this page are the ones they asked us to show.</p></div></section>}
 
     {gallery.length > 0 && <section className="shell provider-gallery-wrap">
       <div className={`provider-gallery gallery-count-${Math.min(gallery.length, 5)}`}>
@@ -70,9 +72,9 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
       <p className="image-attribution"><Images size={14} /> Photos are hosted by TreatmentLane and may have been supplied by the organization. Confirm that photos are current before making a decision.</p>
     </section>}
 
-    <div className="shell provider-detail-grid">
+    <div className={`shell provider-detail-grid${isVerified ? " is-verified" : ""}`}>
       <main className="provider-content">
-        <div className={`notice${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>{provider.verificationStatus === "provider-confirmed" ? <><strong>Provider confirmed.</strong> This provider has claimed this listing and confirmed the details below directly with TreatmentLane.</> : provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>
+        <div className={`notice${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>{provider.verificationStatus === "provider-confirmed" ? <><strong>TreatmentLane Verified.</strong> This provider has claimed this listing and confirmed the details below directly with TreatmentLane.</> : provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>
 
         {provider.isSponsored && <div className="featured-profile-notice"><strong>Featured profile.</strong> This organization pays a flat monthly fee for enhanced placement, a longer profile, and photos. Payment does not affect its verification status.</div>}
 
@@ -151,7 +153,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           {provider.phone && <><dt>Phone</dt><dd><TrackedContactLink href={`tel:${provider.phone}`}><Phone size={15} /> {provider.phone}</TrackedContactLink></dd></>}
           {provider.website && <><dt>Official website</dt><dd><TrackedContactLink href={provider.website} rel="noopener noreferrer nofollow" target="_blank">Visit website <ExternalLink size={14} /></TrackedContactLink></dd></>}
           {provider.sourceUrl && <><dt>Public source</dt><dd><a href={provider.sourceUrl} rel="noopener noreferrer nofollow" target="_blank">View source record <ExternalLink size={14} /></a></dd></>}
-          <dt>Listing status</dt><dd className="listing-status"><BadgeCheck size={15} /> {verificationLabels[provider.verificationStatus]}</dd>
+          <dt>Listing status</dt><dd className="listing-status">{isVerified ? <VerifiedTick size={16} /> : <BadgeCheck size={15} />} {verificationLabels[provider.verificationStatus]}</dd>
           <dt>Last reviewed</dt><dd>{provider.lastVerifiedAt ? new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "medium" }) : "Not independently reviewed"}</dd>
         </dl>
         {provider.phone && <TrackedContactLink className="button provider-call-button" href={`tel:${provider.phone}`}><Phone size={17} /> Call organization</TrackedContactLink>}

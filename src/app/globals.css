@@ -445,3 +445,24 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .compare-table tbody th { background: #fafafa; font-weight: 600; white-space: nowrap; }
 .compare-remove { margin-left: 0.5rem; background: none; border: none; cursor: pointer; color: #999; vertical-align: middle; }
 .compare-remove:hover { color: #c00; }
+
+/* TreatmentLane Verified (provider-confirmed) page treatment */
+.verified-tick { flex: 0 0 auto; display: inline-block; vertical-align: middle; filter: drop-shadow(0 2px 4px rgba(31, 95, 191, 0.25)); }
+.verified-kicker { margin-bottom: 14px; color: var(--verified-dark); background: rgba(255,255,255,.85); border-color: var(--verified-line); }
+.provider-hero.is-verified { background: radial-gradient(circle at 88% -10%, rgba(31, 95, 191, 0.18), transparent 46%), radial-gradient(circle at 0% 120%, rgba(105, 199, 175, 0.16), transparent 40%), linear-gradient(145deg, #f6f9ff, #e9f1fe); border-bottom: 1px solid var(--verified-line); }
+.provider-hero.is-verified h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.provider-hero.is-verified h1 .verified-tick-title { width: .78em; height: .78em; }
+.provider-hero.is-verified .provider-hero-status { border-color: var(--verified); }
+.provider-hero.is-verified .breadcrumb a:hover { color: var(--verified-dark); }
+.claimed-banner .verified-tick { margin-top: 0; }
+.provider-detail-grid.is-verified .section-label { color: var(--verified); }
+.provider-detail-grid.is-verified .information-tags span { border-color: var(--verified-line); background: var(--verified-soft); color: var(--verified-dark); }
+.provider-detail-grid.is-verified .listing-section { border-bottom-color: #e2ebf8; }
+.provider-contact-card.is-claimed { box-shadow: 0 18px 50px rgba(31, 95, 191, 0.12); }
+.provider-contact-card.is-claimed dd a { color: var(--verified-dark); }
+.provider-contact-card.is-claimed .provider-call-button { background: var(--verified); border-color: var(--verified); }
+.provider-contact-card.is-claimed .provider-call-button:hover { background: var(--verified-dark); border-color: var(--verified-dark); }
+.provider-card-verified { border-color: var(--verified-line); box-shadow: 0 12px 30px rgba(31, 95, 191, 0.10); }
+.provider-card-verified .verification-line { color: var(--verified-dark); font-weight: 800; }
+.provider-card h2 .verified-tick-inline { margin-left: 6px; vertical-align: -3px; }
+
