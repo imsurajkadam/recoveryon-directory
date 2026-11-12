@@ -20,7 +20,7 @@ interface CompareProvider {
 const verificationLabels: Record<string, string> = {
   listed: "Directory listing",
   "data-verified": "Data verified",
-  "provider-confirmed": "Provider confirmed",
+  "provider-confirmed": "TreatmentLane Verified",
   "independently-reviewed": "Independently reviewed",
 };
 
