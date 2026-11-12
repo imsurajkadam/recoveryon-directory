@@ -4,6 +4,7 @@ import { SearchX } from "lucide-react";
 import { Pagination } from "@/components/pagination";
 import { ProviderCard } from "@/components/provider-card";
 import { DirectoryFilterSubmit } from "@/components/directory-filter-submit";
+import { VerifiedTick } from "@/components/verified-tick";
 import { careCategories, states } from "@/lib/content";
 import { getDirectoryFacets, searchProviders, type ProviderSort } from "@/lib/providers";
 
@@ -11,7 +12,7 @@ function single(value: string | string[] | undefined) { return Array.isArray(val
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }): Promise<Metadata> {
   const params = await searchParams;
-  const filtered = ["keyword", "location", "category", "state", "insurance", "level", "specialty", "sort", "page"].some((key) => Boolean(single(params[key])));
+  const filtered = ["keyword", "location", "category", "state", "insurance", "level", "specialty", "verified", "sort", "page"].some((key) => Boolean(single(params[key])));
   return {
     title: "Recovery resource directory",
     description: "Search treatment, recovery, and mental health resource listings by service and location.",
@@ -29,15 +30,16 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
   const insurance = single(params.insurance).trim();
   const level = single(params.level).trim();
   const specialty = single(params.specialty).trim();
+  const verified = single(params.verified) === "1";
   const requestedSort = single(params.sort);
   const sort: ProviderSort = ["recently-verified", "most-reviewed", "highest-rated", "alphabetical"].includes(requestedSort)
     ? requestedSort as ProviderSort : "recommended";
   const requestedPage = Math.max(Number.parseInt(single(params.page), 10) || 1, 1);
   const [result, facets] = await Promise.all([
-    searchProviders({ keyword, location, category, state, insurance, level, specialty, sort, page: requestedPage }),
+    searchProviders({ keyword, location, category, state, insurance, level, specialty, verified, sort, page: requestedPage }),
     getDirectoryFacets(),
   ]);
-  const paginationParams = Object.fromEntries(Object.entries({ keyword, location, category, state, insurance, level, specialty, sort: sort === "recommended" ? "" : sort }).filter(([, value]) => value));
+  const paginationParams = Object.fromEntries(Object.entries({ keyword, location, category, state, insurance, level, specialty, verified: verified ? "1" : "", sort: sort === "recommended" ? "" : sort }).filter(([, value]) => value));
 
   return (
     <>
@@ -45,6 +47,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
       <div className="shell directory-layout">
         <form className="filter-card" method="get">
           <h2>Filter listings</h2>
+          <label className="verified-filter"><input type="checkbox" name="verified" value="1" defaultChecked={verified} /><span><VerifiedTick size={18} /> TreatmentLane Verified only</span></label>
           <label>Keyword<input name="keyword" defaultValue={single(params.keyword)} placeholder="Service or provider" /></label>
           <label>Location<input name="location" defaultValue={single(params.location)} placeholder="City, state, or ZIP" /></label>
           <label>Type of care<select name="category" defaultValue={category}><option value="">All care types</option>{careCategories.map((item) => <option key={item.slug} value={item.name}>{item.name}</option>)}</select></label>
@@ -56,7 +59,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
           <DirectoryFilterSubmit />
         </form>
         <section>
-          <div className="results-heading"><div><h2>{result.total ? `${result.total.toLocaleString()} published ${result.total === 1 ? "listing" : "listings"}` : "Published listings"}</h2><p>Clearly labeled Featured listings appear first. Within Featured and standard groups, recommended order prioritizes strong source evidence, complete profiles, verification, and review confidence.</p></div></div>
+          <div className="results-heading"><div><h2>{verified && <VerifiedTick size={26} className="verified-tick-inline" />}{result.total ? `${result.total.toLocaleString()} ${verified ? "TreatmentLane Verified" : "published"} ${result.total === 1 ? "listing" : "listings"}` : verified ? "TreatmentLane Verified listings" : "Published listings"}</h2><p>Clearly labeled Featured listings appear first. Within Featured and standard groups, recommended order prioritizes strong source evidence, complete profiles, verification, and review confidence.</p></div></div>
           {result.providers.length ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname="/directory" params={paginationParams} page={result.page} totalPages={result.totalPages} /></> : <div className="empty-state"><SearchX size={36} /><h2>No matching listings</h2><p>Try another search or suggest an organization for review.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}
         </section>
       </div>

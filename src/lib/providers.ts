@@ -91,6 +91,7 @@ export type ProviderSort = "recommended" | "recently-verified" | "most-reviewed"
 export type ProviderSearch = {
   keyword?: string; location?: string; category?: string; state?: string; insurance?: string; level?: string; specialty?: string;
   sort?: ProviderSort; page?: number; pageSize?: number;
+  verified?: boolean;
 };
 export type ProviderSearchResult = { providers: Provider[]; total: number; page: number; totalPages: number };
 
@@ -144,6 +145,7 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
     clauses.push(`(${level} = any(levels_of_care) or ${level} = any(treatment_types))`);
   }
   if (input.specialty?.trim()) clauses.push(`${add(input.specialty.trim())} = any(specialties)`);
+  if (input.verified) clauses.push(`verification_status = 'provider-confirmed'`);
   const where = clauses.join(" and ");
   try {
     const countRows = await sql.unsafe(`select count(*)::int as count from providers where ${where}`, params);

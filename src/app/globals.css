@@ -465,4 +465,8 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .provider-card-verified { border-color: var(--verified-line); box-shadow: 0 12px 30px rgba(31, 95, 191, 0.10); }
 .provider-card-verified .verification-line { color: var(--verified-dark); font-weight: 800; }
 .provider-card h2 .verified-tick-inline { margin-left: 6px; vertical-align: -3px; }
+.filter-card .verified-filter { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 11px 12px; border: 1px solid var(--verified-line); border-radius: 10px; background: var(--verified-soft); color: var(--verified-dark); font-size: .82rem; font-weight: 800; cursor: pointer; }
+.filter-card .verified-filter input { width: 18px; height: 18px; padding: 0; accent-color: var(--verified); flex: 0 0 auto; }
+.filter-card .verified-filter span { display: inline-flex; align-items: center; gap: 7px; }
+.results-heading h2 .verified-tick-inline { margin-right: 8px; vertical-align: -4px; }
 
