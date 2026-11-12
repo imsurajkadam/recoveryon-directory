@@ -14,6 +14,7 @@ import { buildFaqPageJsonLd, getStateFaqs } from "@/lib/faq-schema";
 import { FaqSection } from "@/components/faq-section";
 import { fitSeoDescription, fitSeoTitle } from "@/lib/provider-seo";
 import { absoluteUrl } from "@/lib/site";
+import { cityPath } from "@/lib/city-pages";
 
 export const revalidate = 3600;
 
@@ -76,7 +77,7 @@ export default async function StatePage({ params, searchParams }: { params: Prom
     {topCities.length ? <section className="section"><div className="shell">
       <div className="results-heading"><div><h2>Top cities for treatment in {state.name}</h2><p>These cities have the most published listings in {state.name}. Select a city to filter the directory.</p></div></div>
       <div className="provider-location-grid">
-        {topCities.map((item) => <Link className="provider-location-link" href={`/directory?state=${state.code}&location=${encodeURIComponent(item.city)}`} key={item.city} prefetch={false}><MapPin size={18} /><span><strong>{item.city}</strong><small>{item.count.toLocaleString("en-US")} {item.count === 1 ? "listing" : "listings"}</small></span></Link>)}
+        {topCities.map((item) => <Link className="provider-location-link" href={cityPath(state, item.city)} key={item.city} prefetch={false}><MapPin size={18} /><span><strong>{item.city}</strong><small>{item.count.toLocaleString("en-US")} {item.count === 1 ? "listing" : "listings"}</small></span></Link>)}
       </div>
     </div></section> : null}
     {careTypes.length ? <section className="section"><div className="shell">

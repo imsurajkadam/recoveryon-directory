@@ -271,6 +271,7 @@ p { color: var(--ink-soft); }
 .listing-section p { max-width: 800px; }
 .section-label { color: var(--teal-dark); text-transform: uppercase; letter-spacing: .09em; font-size: .68rem; font-weight: 800; }
 .listing-lead { font-size: 1.03rem; }
+.listing-summary { color: var(--ink-soft); margin-top: 0.75rem; line-height: 1.65; }
 .quick-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 26px; }
 .quick-facts > div { display: grid; grid-template-columns: 35px 1fr; column-gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fbfdfd; }
 .quick-facts svg { grid-row: 1 / span 2; width: 22px; color: var(--teal); }
@@ -496,3 +497,12 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 @media (prefers-reduced-motion: reduce) { .care-card::before, .care-icon, .care-card .card-link svg { transition: none; } }
 
 .care-explainer { padding-bottom: 72px; }
+
+.spacer-top { margin-top: 2.5rem; }
+.organization-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.organization-facts > div { border: 1px solid var(--line); border-radius: 14px; padding: 20px; background: var(--white); }
+.organization-facts h3 { font-size: 1rem; margin: 0 0 10px; }
+.organization-facts ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.organization-facts li { display: flex; justify-content: space-between; gap: 12px; font-size: .92rem; }
+.organization-facts small { color: var(--ink-soft); white-space: nowrap; }
+.section.section-tight { padding-bottom: 12px; }

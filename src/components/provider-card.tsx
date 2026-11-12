@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { buildProviderBlurb, hasTemplateDescription } from "@/lib/provider-summary";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Building2, MapPin, MapPinned, Star } from "lucide-react";
 import { FeaturedBadge } from "@/components/featured-badge";
@@ -41,7 +42,7 @@ export function ProviderCard({ provider }: { provider: Provider }) {
             : <span className="location-count-badge"><MapPinned size={14} /> {locationCountLabel}</span>}
         </div>
         <h2><Link href={href} prefetch={false}>{provider.name}</Link>{isVerified && <VerifiedTick size={20} className="verified-tick-inline" />}</h2>
-        <p>{provider.description || "View treatment types, services, contact information, and source details."}</p>
+        <p>{hasTemplateDescription(provider) ? buildProviderBlurb(provider) : provider.description}</p>
         <div className="tag-row">{tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
         <div className="provider-card-meta">
           <span className="verification-line">{isVerified ? <VerifiedTick size={16} /> : <BadgeCheck size={16} />} {labels[provider.verificationStatus]}</span>
