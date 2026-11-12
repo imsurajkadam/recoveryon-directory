@@ -270,6 +270,31 @@ const getStateCitiesCached = unstable_cache(async (stateCode: string): Promise<S
 }, ["state-cities"], { revalidate: 3600, tags: ["providers"] });
 export const getStateCities = cache(getStateCitiesCached);
 
+export type FilteredCityCount = { state: string; city: string; count: number };
+export type CityCountFilter = { state?: string; insurance?: string; category?: string; levels?: string[] };
+
+/** Cities ranked by how many published listings match a filter (state, insurance, care category or levels). */
+const getFilteredCityCountsCached = unstable_cache(async (filter: CityCountFilter, limit: number): Promise<FilteredCityCount[]> => {
+  const sql = getDatabase();
+  if (!sql) return [];
+  const clauses = ["publication_status = 'published'", "city is not null", "city <> ''"];
+  const params: (string | number)[] = [];
+  const add = (value: string | number) => { params.push(value); return `$${params.length}`; };
+  if (filter.state) clauses.push(`state = ${add(filter.state)}`);
+  if (filter.insurance) clauses.push(`${add(filter.insurance)} = any(insurance)`);
+  if (filter.category) clauses.push(`${add(filter.category)} = any(categories)`);
+  if (filter.levels?.length) clauses.push(`(${filter.levels.map((level) => { const ref = add(level); return `${ref} = any(levels_of_care) or ${ref} = any(treatment_types)`; }).join(" or ")})`);
+  try {
+    const rows = await sql.unsafe(
+      `select state, city, count(*)::int as count from providers where ${clauses.join(" and ")}
+       group by state, city order by count desc, city limit $${params.length + 1}`,
+      [...params, limit],
+    );
+    return rows.map((row) => ({ state: String(row.state), city: String(row.city), count: Number(row.count) }));
+  } catch (error) { console.error("Filtered city count lookup failed", error); throw error; }
+}, ["filtered-city-counts"], { revalidate: 3600, tags: ["providers"] });
+export const getFilteredCityCounts = cache(getFilteredCityCountsCached);
+
 export type CityCount = { state: string; city: string; count: number; updatedAt: string };
 
 const getCitiesWithMinListingsCached = unstable_cache(async (minListings: number): Promise<CityCount[]> => {

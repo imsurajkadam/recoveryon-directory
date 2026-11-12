@@ -2,6 +2,8 @@ export interface Insurer {
   slug: string;
   name: string;
   description: string;
+  /** Limit listings to one state (e.g. Medi-Cal is California-only). */
+  state?: string;
 }
 
 export const insurers: Insurer[] = [
@@ -13,4 +15,7 @@ export const insurers: Insurer[] = [
   { slug: "medicaid", name: "Medicaid", description: "Medicaid covers addiction treatment in all states, though covered services vary. Many facilities accept Medicaid; check state-specific benefits." },
   { slug: "medicare", name: "Medicare", description: "Medicare covers inpatient and outpatient substance use treatment when medically necessary. Part A covers inpatient, Part B covers outpatient." },
   { slug: "kaiser-permanente", name: "Kaiser Permanente", description: "Kaiser covers addiction treatment within its network. Referrals typically go through Kaiser's own behavioral health services." },
+  { slug: "tricare", name: "TRICARE", description: "TRICARE is the health program for uniformed service members, retirees, and their families. It covers medically necessary substance use disorder care, including inpatient, residential, partial hospitalization, intensive outpatient, and outpatient treatment. Some levels of care need a referral or prior authorization." },
+  { slug: "medi-cal", name: "Medi-Cal", state: "CA", description: "Medi-Cal is California's Medicaid program. It covers substance use disorder treatment, and in counties that run the Drug Medi-Cal Organized Delivery System, members can get a wider range of services, often through county behavioral health. Covered services and how to start care vary by county." },
+  { slug: "va-community-care", name: "VA Community Care", description: "VA Community Care lets eligible veterans get treatment from community providers outside the VA when the VA authorizes it. Ask your VA care team about eligibility and get an authorization before starting treatment with a community provider." },
 ];

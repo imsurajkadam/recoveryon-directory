@@ -506,3 +506,6 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .organization-facts li { display: flex; justify-content: space-between; gap: 12px; font-size: .92rem; }
 .organization-facts small { color: var(--ink-soft); white-space: nowrap; }
 .section.section-tight { padding-bottom: 12px; }
+.near-me-local { border: 1px solid var(--line); border-radius: 16px; padding: 24px; background: var(--white); }
+.near-me-local.is-loading { color: var(--ink-soft); }
+.near-me-local small svg { vertical-align: -1px; }

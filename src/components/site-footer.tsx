@@ -17,6 +17,10 @@ export function SiteFooter() {
           <Link href="/locations" prefetch={false}>Browse locations</Link>
           <Link href="/insurance" prefetch={false}>Insurance</Link>
           <Link href="/guides" prefetch={false}>Guides</Link>
+          <Link href="/sober-living-near-me" prefetch={false}>Sober living near me</Link>
+          <Link href="/iop-near-me" prefetch={false}>IOP near me</Link>
+          <Link href="/detox-centers-near-me" prefetch={false}>Detox near me</Link>
+          <Link href="/insurance/medicaid" prefetch={false}>Rehabs that take Medicaid</Link>
         </div>
         <div>
           <h2>Trust</h2>
