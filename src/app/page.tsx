@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, BookOpenCheck, Building2, Check, ClipboardCheck, HeartHandshake, MapPinned, PhoneCall, SearchCheck, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, ClipboardCheck, MapPinned, PhoneCall, ShieldCheck } from "lucide-react";
+import { careAccentStyle, getCareVisual } from "@/components/care-visuals";
 import { SearchForm } from "@/components/search-form";
 import { careCategories, featuredStateCodes, guides, states } from "@/lib/content";
 import { insurers } from "@/lib/insurance-data";
@@ -11,7 +12,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const categoryIcons = [Building2, ShieldCheck, HeartHandshake, BookOpenCheck, MapPinned, SearchCheck, ClipboardCheck, BadgeCheck];
 
 export default function Home() {
   const featuredStates = states.filter((state) => featuredStateCodes.includes(state.code));
@@ -41,9 +41,9 @@ export default function Home() {
         <div className="shell">
           <div className="section-heading"><div><span className="kicker plain">Types of support</span><h2>Start with the care you are looking for</h2><p>Understand the main options, then compare organizations that fit your location and needs.</p></div><Link className="text-link" href="/care" prefetch={false}>View all care types <ArrowRight size={17} /></Link></div>
           <div className="category-grid">
-            {careCategories.map((category, index) => {
-              const Icon = categoryIcons[index];
-              return <Link className="category-card" key={category.slug} href={`/care/${category.slug}`} prefetch={false}><span className="category-icon"><Icon /></span><h3>{category.name}</h3><p>{category.description}</p><span className="card-link">Explore <ArrowRight size={16} /></span></Link>;
+            {careCategories.map((category) => {
+              const { Icon } = getCareVisual(category.slug);
+              return <Link className="category-card care-card" style={careAccentStyle(category.slug)} key={category.slug} href={`/care/${category.slug}`} prefetch={false}><span className="care-icon" aria-hidden="true"><Icon size={24} strokeWidth={1.8} /></span><h3>{category.name}</h3><p>{category.description}</p><span className="card-link">Explore <ArrowRight size={16} /></span></Link>;
             })}
           </div>
         </div>
