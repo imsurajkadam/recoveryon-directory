@@ -38,7 +38,7 @@ export function ProviderApplicationForm({ listingReference = "" }: { listingRefe
   }
 
   if (status === "success") {
-    return <div className="success-panel" role="status"><CheckCircle2 size={32} /><h2>Application received</h2><p>We will review the organization and contact you if we need additional information.</p></div>;
+    return <div className="success-panel" role="status"><CheckCircle2 size={32} /><h2>Application received</h2><p>We will review the organization and contact you if we need additional information. Once your listing is verified, you can add a TreatmentLane Verified badge to your website from your listing page.</p></div>;
   }
 
   return (
@@ -54,6 +54,10 @@ export function ProviderApplicationForm({ listingReference = "" }: { listingRefe
         <label><span className="field-label">City <span className="required-mark" aria-hidden="true">*</span></span><input name="city" required maxLength={100} /></label>
         <label><span className="field-label">State <span className="required-mark" aria-hidden="true">*</span></span><select name="state" required defaultValue=""><option value="" disabled>Select state</option>{states.map((state) => <option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
         <label className="full-field"><span className="field-label">Notes <span className="optional-label">(optional)</span></span><textarea name="notes" rows={5} maxLength={2000} defaultValue={listingReference ? `Claim request for TreatmentLane listing: ${listingReference}` : ""} placeholder="Tell us what services you provide and whether this is a new listing or a claim." /></label>
+        {listingReference ? <input type="hidden" name="listingReference" value={listingReference} /> : null}
+        <label className="full-field"><span className="field-label">Listing description <span className="optional-label">(optional, shown on your listing after review)</span></span><textarea name="listingDescription" rows={5} maxLength={1500} placeholder="Describe your program in your own words: who you serve, levels of care, approach, and what makes you different. Avoid guarantees or claims about outcomes." /></label>
+        <label className="full-field"><span className="field-label">Photo links <span className="optional-label">(optional)</span></span><textarea name="photoUrls" rows={3} maxLength={1500} placeholder={"Paste links to photos of your facility, one per line (https://...)"} /></label>
+        <label className="full-field checkbox-field"><input type="checkbox" name="photoRights" /> <span>We own these photos or have permission to use them, and we allow TreatmentLane to display them on our listing.</span></label>
         <label className="honeypot" aria-hidden="true">Leave this empty<input name="companyFax" tabIndex={-1} autoComplete="off" /></label>
       </div>
       {status === "error" && <p className="form-error" role="alert">{message}</p>}

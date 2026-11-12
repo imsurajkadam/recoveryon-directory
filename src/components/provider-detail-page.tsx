@@ -177,7 +177,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>
-          <p>{provider.verificationStatus === "provider-confirmed" ? <>This listing has been claimed and its contact details were confirmed by {provider.name}.</> : <>Represent this organization? <Link href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}>Claim this listing</Link>.</>} See inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
+          <p>{provider.verificationStatus === "provider-confirmed" ? <>This listing has been claimed and its contact details were confirmed by {provider.name}. Provider? <Link href={`/providers/badge?listing=${encodeURIComponent(path)}`} prefetch={false}>Add the TreatmentLane Verified badge to your website</Link>.</> : <>Represent this organization? <Link href={`/providers/apply?provider=${encodeURIComponent(path)}`} prefetch={false}>Claim this listing</Link>.</>} See inaccurate information? <Link href={`/corrections?provider=${encodeURIComponent(path)}`} prefetch={false}>Request a correction</Link>. TreatmentLane keeps source-derived information clearly separated from provider-confirmed facts.</p>
         </section>
       </main>
 

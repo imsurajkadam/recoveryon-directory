@@ -3,6 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { insurers } from "@/lib/insurance-data";
+
+const insurerGuides: Record<string, { label: string; href: string }> = {
+  medicaid: { label: "Does Medicaid cover rehab?", href: "/guides/does-medicaid-cover-rehab" },
+  "medi-cal": { label: "Does Medicaid cover rehab?", href: "/guides/does-medicaid-cover-rehab" },
+  medicare: { label: "Does Medicare cover rehab?", href: "/guides/does-medicare-cover-rehab" },
+  "blue-cross-blue-shield": { label: "Does Blue Cross Blue Shield cover rehab?", href: "/guides/does-blue-cross-blue-shield-cover-rehab" },
+};
 import { medicaidStates } from "@/lib/medicaid-states";
 import { stateByCode } from "@/lib/city-pages";
 import { searchProviders } from "@/lib/providers";
@@ -35,6 +42,7 @@ export default async function InsurancePage({ params }: { params: Promise<{ slug
       <div className="breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/insurance">Insurance</Link><span>/</span><span>{insurer.name}</span></div>
       <h1>Rehab centers that accept {insurer.name}</h1>
       <p>{insurer.description}</p>
+      {insurerGuides[insurer.slug] ? <p><Link className="text-link" href={insurerGuides[insurer.slug].href} prefetch={false}>Read the guide: {insurerGuides[insurer.slug].label} <ArrowRight size={17} /></Link></p> : null}
       <div className="notice">Insurance participation changes frequently. Always verify in-network status, authorization requirements, and your expected out-of-pocket cost with both the provider and {insurer.name} before committing.</div>
     </div></section>
     <section className="section"><div className="shell">

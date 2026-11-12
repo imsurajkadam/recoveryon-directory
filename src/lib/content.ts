@@ -2,6 +2,7 @@ import { guideBatch1 } from "@/lib/guide-content-batch-1";
 import { guideBatch2 } from "@/lib/guide-content-batch-2";
 import { guideBatch3 } from "@/lib/guide-content-batch-3";
 import { guideBatch4 } from "@/lib/guide-content-batch-4";
+import { guideBatch5 } from "@/lib/guide-content-batch-5";
 
 export type CareCategory = {
   name: string;
@@ -105,6 +106,8 @@ export type Guide = {
   reviewedOn: string;
   sections: Array<{ heading: string; body: string }>;
   sources: Array<{ label: string; href: string }>;
+  faq?: Array<{ question: string; answer: string }>;
+  related?: Array<{ label: string; href: string }>;
 };
 
 export const guides: Guide[] = [
@@ -539,4 +542,5 @@ export const guides: Guide[] = [
   ...guideBatch2,
   ...guideBatch3,
   ...guideBatch4,
+  ...guideBatch5,
 ];
