@@ -5,7 +5,7 @@ import { ProviderCard } from "@/components/provider-card";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
 import { getOrganizationCtrMetadata, getProviderCtrMetadata } from "@/lib/provider-metadata";
 import { fitSeoDescription, fitSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
-import { getProviderByLegacySlug, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
+import { getProviderByLegacySlug, getProvidersByOrganizationSlug, getNearbyProviders, providerPath } from "@/lib/providers";
 
 export const revalidate = 3600;
 
@@ -44,7 +44,10 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
 
   const providers = await getProvidersByOrganizationSlug(slug);
   if (!providers.length) notFound();
-  if (providers.length === 1) return <ProviderDetailPage provider={providers[0]} organizationProviders={providers} />;
+  if (providers.length === 1) {
+    const nearbyProviders = await getNearbyProviders(providers[0].id, providers[0].city, providers[0].state);
+    return <ProviderDetailPage provider={providers[0]} organizationProviders={providers} nearbyProviders={nearbyProviders} />;
+  }
 
   return <>
     <section className="page-hero"><div className="shell">

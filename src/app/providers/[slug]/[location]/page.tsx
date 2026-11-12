@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { ProviderDetailPage } from "@/components/provider-detail-page";
 import { getProviderCtrMetadata } from "@/lib/provider-metadata";
 import { fitSeoDescription, fitSeoTitle, isProviderIndexable } from "@/lib/provider-seo";
-import { getProviderByCanonicalPath, getProvidersByOrganizationSlug, providerPath } from "@/lib/providers";
+import { getProviderByCanonicalPath, getProvidersByOrganizationSlug, getNearbyProviders, providerPath } from "@/lib/providers";
 
 export const revalidate = 3600;
 
@@ -27,5 +27,6 @@ export default async function ProviderLocationPage({ params }: { params: Promise
   if (!provider) notFound();
   if (provider.organizationLocationCount <= 1) permanentRedirect(providerPath(provider));
   const organizationProviders = await getProvidersByOrganizationSlug(slug);
-  return <ProviderDetailPage provider={provider} organizationProviders={organizationProviders} />;
+  const nearbyProviders = await getNearbyProviders(provider.id, provider.city, provider.state);
+  return <ProviderDetailPage provider={provider} organizationProviders={organizationProviders} nearbyProviders={nearbyProviders} />;
 }

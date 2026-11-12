@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SearchX } from "lucide-react";
+import { Layers3, MapPin, SearchX } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { EditorialTrust } from "@/components/editorial-trust";
 import { Pagination } from "@/components/pagination";
 import { ProviderCard } from "@/components/provider-card";
-import { states } from "@/lib/content";
+import { careCategories, states } from "@/lib/content";
 import { stateEditorial } from "@/lib/state-editorial";
 import { EDITORIAL_REVIEWED_ON, editorialAuthor, editorialSources } from "@/lib/editorial-trust";
-import { providerPath, searchProviders } from "@/lib/providers";
+import { getStateCategoryCounts, getStateTopCities, providerPath, searchProviders } from "@/lib/providers";
 import { buildFaqPageJsonLd, getStateFaqs } from "@/lib/faq-schema";
 import { FaqSection } from "@/components/faq-section";
 import { fitSeoDescription, fitSeoTitle } from "@/lib/provider-seo";
@@ -40,6 +40,11 @@ export default async function StatePage({ params, searchParams }: { params: Prom
   const editorial = stateEditorial[slug];
   const query = await searchParams;
   const result = await searchProviders({ state: state.code, page: Math.max(Number.parseInt(query.page || "1", 10) || 1, 1) });
+  const [topCities, categoryCounts] = await Promise.all([getStateTopCities(state.code), getStateCategoryCounts(state.code)]);
+  const categoryCountByName = new Map(categoryCounts.map((item) => [item.category, item.count]));
+  const careTypes = careCategories
+    .map((category) => ({ ...category, count: categoryCountByName.get(category.name) || 0 }))
+    .filter((category) => category.count > 0);
   const itemListJsonLd = result.providers.length ? {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -67,6 +72,18 @@ export default async function StatePage({ params, searchParams }: { params: Prom
       <h2>Finding addiction treatment in {state.name}</h2>
       <p>{editorial.intro}</p>
       {editorial.sections.map((section) => <section key={section.heading}><h3>{section.heading}</h3><p>{section.body}</p></section>)}
+    </div></section> : null}
+    {topCities.length ? <section className="section"><div className="shell">
+      <div className="results-heading"><div><h2>Top cities for treatment in {state.name}</h2><p>These cities have the most published listings in {state.name}. Select a city to filter the directory.</p></div></div>
+      <div className="provider-location-grid">
+        {topCities.map((item) => <Link className="provider-location-link" href={`/directory?state=${state.code}&location=${encodeURIComponent(item.city)}`} key={item.city} prefetch={false}><MapPin size={18} /><span><strong>{item.city}</strong><small>{item.count.toLocaleString("en-US")} {item.count === 1 ? "listing" : "listings"}</small></span></Link>)}
+      </div>
+    </div></section> : null}
+    {careTypes.length ? <section className="section"><div className="shell">
+      <div className="results-heading"><div><h2>Types of care in {state.name}</h2><p>Published listings in {state.name} by type of care. Select a type to filter the directory.</p></div></div>
+      <div className="provider-location-grid">
+        {careTypes.map((category) => <Link className="provider-location-link" href={`/directory?state=${state.code}&category=${encodeURIComponent(category.name)}`} key={category.slug} prefetch={false}><Layers3 size={18} /><span><strong>{category.name}</strong><small>{category.count.toLocaleString("en-US")} {category.count === 1 ? "listing" : "listings"}</small></span></Link>)}
+      </div>
     </div></section> : null}
     <FaqSection faqs={faqs} />
     <section className="section" id="listings"><div className="shell">{result.providers.length ? <>

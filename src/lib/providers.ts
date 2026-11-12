@@ -203,6 +203,67 @@ const getProvidersByOrganizationSlugCached = unstable_cache(async (organizationS
 }, ["providers-by-organization-slug"], { revalidate: 3600, tags: ["providers"] });
 export const getProvidersByOrganizationSlug = cache(getProvidersByOrganizationSlugCached);
 
+// Up to 6 other published providers in the same city. When fewer than 3
+// share the city, fill the list from the same state. Never includes the
+// provider itself. Returns an empty list when nothing else is published.
+const getNearbyProvidersCached = unstable_cache(async (providerId: string, city: string, state: string): Promise<Provider[]> => {
+  const sql = getDatabase();
+  if (!sql) return [];
+  try {
+    const cityRows = await sql.unsafe(
+      `select ${providerColumns} from providers
+       where publication_status = 'published' and state = $1 and city = $2 and id != $3
+       order by ${orderBy.recommended} limit 6`,
+      [state, city, providerId],
+    );
+    const nearby = (cityRows as unknown as ProviderRow[]).map(toProvider);
+    if (nearby.length >= 3) return nearby;
+    const seen = new Set(nearby.map((provider) => provider.id));
+    const stateRows = await sql.unsafe(
+      `select ${providerColumns} from providers
+       where publication_status = 'published' and state = $1 and id != $2
+       order by ${orderBy.recommended} limit 12`,
+      [state, providerId],
+    );
+    for (const provider of (stateRows as unknown as ProviderRow[]).map(toProvider)) {
+      if (nearby.length >= 6) break;
+      if (!seen.has(provider.id)) { seen.add(provider.id); nearby.push(provider); }
+    }
+    return nearby;
+  } catch (error) { console.error("Nearby provider lookup failed", error); throw error; }
+}, ["nearby-providers"], { revalidate: 3600, tags: ["providers"] });
+export const getNearbyProviders = cache(getNearbyProvidersCached);
+
+export type StateCityCount = { city: string; count: number };
+
+const getStateTopCitiesCached = unstable_cache(async (stateCode: string): Promise<StateCityCount[]> => {
+  const sql = getDatabase();
+  if (!sql) return [];
+  try {
+    const rows = await sql`select city, count(*)::int as count
+      from providers
+      where publication_status = 'published' and state = ${stateCode}
+      group by city order by count desc, city limit 8`;
+    return rows.map((row) => ({ city: String(row.city), count: Number(row.count) }));
+  } catch (error) { console.error("State city lookup failed", error); throw error; }
+}, ["state-top-cities"], { revalidate: 3600, tags: ["providers"] });
+export const getStateTopCities = cache(getStateTopCitiesCached);
+
+export type StateCategoryCount = { category: string; count: number };
+
+const getStateCategoryCountsCached = unstable_cache(async (stateCode: string): Promise<StateCategoryCount[]> => {
+  const sql = getDatabase();
+  if (!sql) return [];
+  try {
+    const rows = await sql`select value as category, count(*)::int as count
+      from providers cross join lateral unnest(categories) value
+      where publication_status = 'published' and state = ${stateCode}
+      group by value order by count desc, value`;
+    return rows.map((row) => ({ category: String(row.category), count: Number(row.count) }));
+  } catch (error) { console.error("State category lookup failed", error); throw error; }
+}, ["state-category-counts"], { revalidate: 3600, tags: ["providers"] });
+export const getStateCategoryCounts = cache(getStateCategoryCountsCached);
+
 export async function hasPublishedProviders(filter: { state?: string; category?: string }) {
   return (await searchProviders({ ...filter, pageSize: 1 })).total > 0;
 }
