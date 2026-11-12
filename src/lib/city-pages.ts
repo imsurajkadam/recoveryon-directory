@@ -83,6 +83,18 @@ export function citySlug(city: string) {
   return city.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+/**
+ * Old city slugs that were merged into one spelling in the database on 2026-11-12
+ * ("St. Louis" / "St Louis" -> "Saint Louis", "New York" -> "New York City",
+ * "Washington DC" -> "Washington"). Returns the slug to redirect to, or null.
+ */
+export function cityAliasSlug(stateCode: string, slug: string): string | null {
+  if (stateCode === "NY" && slug === "new-york") return "new-york-city";
+  if (stateCode === "DC" && slug === "washington-dc") return "washington";
+  if (slug.startsWith("st-")) return `saint-${slug.slice(3)}`;
+  return null;
+}
+
 export function stateBySlug(slug: string): State | undefined {
   return states.find((state) => state.slug === slug);
 }
