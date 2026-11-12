@@ -60,7 +60,7 @@ export function NearMeLocal({ care, label }: { care: string; label: string }) {
     : data.mode === "national" ? (data.notFoundQuery ? `No listings matched "${data.notFoundQuery}". Showing the most-reviewed listings in the US instead.` : "Search a US city or ZIP code, or share your location, to see listings closest to you.")
       : data.mode === "gps" ? "Closest listings to your current location."
         : data.mode === "ip" ? "Based on your approximate location. Search below to change the area."
-          : `${data.total?.toLocaleString("en-US")} listings found.`;
+          : data.providers?.some((provider) => provider.distanceMiles !== null) ? `Closest listings to ${data.place}.` : `${data.total?.toLocaleString("en-US")} listings found.`;
 
   return <div className="near-me-local">
     <form className="near-me-controls" onSubmit={onSearch}>
