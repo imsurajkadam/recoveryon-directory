@@ -1,0 +1,30 @@
+# TreatmentLane
+
+TreatmentLane is a free directory that helps families find and compare addiction treatment centers, mental health resources, and recovery support across the United States. It covers all 50 states, with guides on paying for treatment and choosing a program.
+
+## Browse by location
+
+- All states: https://treatmentlane.com/locations
+- California (3,825 providers): https://treatmentlane.com/locations/california
+- New York (1,790 providers): https://treatmentlane.com/locations/new-york
+- Florida (1,510 providers): https://treatmentlane.com/locations/florida
+- Pennsylvania (1,457 providers): https://treatmentlane.com/locations/pennsylvania
+- Ohio (1,405 providers): https://treatmentlane.com/locations/ohio
+
+## Types of care
+
+- Types of care: https://treatmentlane.com/care
+
+## Provider hubs
+
+- LifeStance Health (22 locations): https://treatmentlane.com/providers/lifestance-health
+- Rogers Behavioral Health (13 locations): https://treatmentlane.com/providers/rogers-behavioral-health
+- Canvas Health (7 locations): https://treatmentlane.com/providers/canvas-health
+- Avenues Recovery Center (Cambridge, MD): https://treatmentlane.com/providers/avenues-recovery-center
+
+## Help and standards
+
+- Emergency help: https://treatmentlane.com/emergency-help
+- Editorial standards: https://treatmentlane.com/about/editorial-standards
+- Request a listing correction: https://treatmentlane.com/corrections
+- Contact: https://treatmentlane.com/contact
