@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
     title: { absolute: fitSeoTitle(`Compare ${count}${category.name}: Costs & Insurance`) },
     description: fitSeoDescription(`${category.description} Compare ${count}listings, with costs and insurance explained.`),
     alternates: { canonical: `/care/${category.slug}` },
-    robots: { index: total > 0, follow: true },
+    robots: { index: total >= 10, follow: true },
   };
 }
 

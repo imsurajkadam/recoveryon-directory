@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { cityCarePath, cityCareTypes, cityPath, isIndexedCityCarePage, stateByCode } from "@/lib/city-pages";
 import { buildProviderSummary, hasTemplateDescription } from "@/lib/provider-summary";
 import { VerifiedTick } from "@/components/verified-tick";
 import Link from "next/link";
@@ -159,6 +160,20 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
             })}
           </div>
         </section>}
+
+        {(() => {
+          const state = stateByCode(provider.state);
+          if (!state) return null;
+          const careLinks = cityCareTypes.filter((type) => isIndexedCityCarePage(state.code, provider.city, type.slug));
+          return <section className="listing-section">
+            <span className="section-label">Explore the area</span><h2>More treatment options in {provider.city}</h2>
+            <div className="provider-location-grid">
+              <Link className="provider-location-link" href={cityPath(state, provider.city)} prefetch={false}><MapPin size={18} /><span><strong>All treatment in {provider.city}</strong><small>Compare every listing in {provider.city}, {state.code}</small></span></Link>
+              {careLinks.map((type) => <Link className="provider-location-link" href={cityCarePath(state, provider.city, type.slug)} key={type.slug} prefetch={false}><MapPin size={18} /><span><strong>{type.label} in {provider.city}</strong><small>Compare {type.short} listings in {provider.city}</small></span></Link>)}
+              <Link className="provider-location-link" href={`/locations/${state.slug}`} prefetch={false}><MapPin size={18} /><span><strong>Treatment in {state.name}</strong><small>Cities, care types, and insurance across the state</small></span></Link>
+            </div>
+          </section>;
+        })()}
 
         <section className="listing-section">
           <span className="section-label">Accuracy</span><h2>Sources and corrections</h2>
