@@ -48,9 +48,30 @@ function streetAddress(value, city, state, postalCode) {
   return address;
 }
 
+// Stop words that must never end a slug. A truncated import used to leave
+// slugs ending in a dangling fragment such as "-and" or "-of". "in" and "op"
+// are excluded: "in" ends real names and "op" is a legitimate outpatient
+// program suffix (for example "... Inc OP").
+const TRAILING_STOP_WORDS = new Set(["at", "of", "the", "and", "for", "to", "on", "with", "a"]);
+
 function slugify(value) {
-  return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 92) || "provider";
+  const normalized = value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (!normalized) return "provider";
+  let slug = normalized;
+  if (slug.length > 92) {
+    const boundary = slug.lastIndexOf("-", 92);
+    slug = boundary > 0 ? slug.slice(0, boundary) : slug.slice(0, 92);
+  }
+  let trimmed = slug;
+  for (;;) {
+    const dash = trimmed.lastIndexOf("-");
+    const tail = dash === -1 ? trimmed : trimmed.slice(dash + 1);
+    if (!TRAILING_STOP_WORDS.has(tail)) break;
+    if (dash === -1) { trimmed = ""; break; }
+    trimmed = trimmed.slice(0, dash);
+  }
+  return trimmed || "provider";
 }
 
 function safeUrl(value) {
