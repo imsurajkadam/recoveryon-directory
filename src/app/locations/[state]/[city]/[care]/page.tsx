@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { FaqSection } from "@/components/faq-section";
 import { Pagination } from "@/components/pagination";
 import { ProviderCard } from "@/components/provider-card";
 import { buildFaqPageJsonLd, type FaqEntry } from "@/lib/faq-schema";
-import { CITY_CARE_MIN_LISTINGS, careSearchFilter, careTypeBySlug, cityCarePath, cityCareTypes, cityPath, citySlug, isIndexedCityCarePage, stateBySlug } from "@/lib/city-pages";
+import { CITY_CARE_MIN_LISTINGS, careSearchFilter, careTypeBySlug, cityCarePath, cityCareTypes, cityAliasSlug, cityPath, citySlug, isIndexedCityCarePage, stateBySlug } from "@/lib/city-pages";
 import { fitSeoDescription, fitSeoTitle } from "@/lib/provider-seo";
 import { getStateCities, providerPath, searchProviders } from "@/lib/providers";
 import { absoluteUrl } from "@/lib/site";
@@ -42,7 +42,12 @@ export async function generateMetadata({ params }: { params: Promise<{ state: st
 export default async function CityCarePage({ params, searchParams }: { params: Promise<{ state: string; city: string; care: string }>; searchParams: Promise<{ page?: string }> }) {
   const { state: stateSlug, city: slug, care } = await params;
   const resolved = await resolvePage(stateSlug, slug, care);
-  if (!resolved) notFound();
+  if (!resolved) {
+    const state = stateBySlug(stateSlug);
+    const alias = state ? cityAliasSlug(state.code, slug) : null;
+    if (state && alias && (await getStateCities(state.code)).some((item) => citySlug(item.city) === alias)) permanentRedirect(`/locations/${state.slug}/${alias}/${care}`);
+    notFound();
+  }
   const { state, type, city, cities } = resolved;
   const query = await searchParams;
   const page = Math.max(Number.parseInt(query.page || "1", 10) || 1, 1);
