@@ -1,6 +1,6 @@
 # TreatmentLane
 
-TreatmentLane is a free directory that helps families find and compare addiction treatment centers, mental health resources, and recovery support across the United States. It covers all 50 states, with guides on paying for treatment and choosing a program.
+TreatmentLane is a free directory that helps families find and compare addiction treatment centers, mental health resources, and recovery support across the United States. It covers all 50 states, Washington, D.C., and U.S. territories, with guides on paying for treatment and choosing a program.
 
 ## Browse by location
 
