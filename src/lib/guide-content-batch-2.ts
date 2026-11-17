@@ -525,7 +525,7 @@ export const guideBatch2: Guide[] = [
     sources: [
       { label: "SAMHSA: Helping your child", href: "https://www.samhsa.gov/find-support/helping-someone/helping-your-child" },
       { label: "SAMHSA: Youth, young adult, and family treatment resources", href: "https://www.samhsa.gov/substance-use/treatment/youth-and-families" },
-      { label: "NIDA: Principles of adolescent substance use treatment", href: "https://archives.nida.nih.gov/sites/default/files/podat-guide-adolescents-508.pdf" },
+      { label: "NIDA: Principles of adolescent substance use treatment", href: "https://www.ojp.gov/ncjrs/virtual-library/abstracts/principles-adolescent-substance-use-disorder-treatment-research" },
     ],
   }),
   buildGuide({

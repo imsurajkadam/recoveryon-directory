@@ -10,6 +10,7 @@ import { stateByCode } from "@/lib/city-pages";
 import { absoluteUrl } from "@/lib/site";
 import type { Provider } from "@/lib/types";
 import { getProviderByLegacySlug, getProvidersByOrganizationSlug, getNearbyProviders, providerPath } from "@/lib/providers";
+import { resolveSlugRedirect } from "@/lib/slug-redirects";
 
 export const revalidate = 3600;
 
@@ -18,7 +19,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const legacy = await getProviderByLegacySlug(slug);
   const providers = await getProvidersByOrganizationSlug(slug);
   if (legacy && legacy.organizationSlug !== slug) return { robots: { index: false, follow: true }, alternates: { canonical: providerPath(legacy) } };
-  if (!providers.length) return {};
+  if (!providers.length) {
+    // Truncated organization slug renamed by the slug fix: point search
+    // engines at the new URL and keep the old one out of the index. The
+    // redirect itself only fires once the old slug stops resolving, which
+    // happens when the data migration runs.
+    const newSlug = resolveSlugRedirect(slug);
+    if (newSlug) return { robots: { index: false, follow: true }, alternates: { canonical: `/providers/${newSlug}` } };
+    return {};
+  }
   if (providers.length === 1) {
     const provider = providers[0];
     const ctrMetadata = getProviderCtrMetadata(provider);
@@ -47,7 +56,11 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
   if (legacy && legacy.organizationSlug !== slug) permanentRedirect(providerPath(legacy));
 
   const providers = await getProvidersByOrganizationSlug(slug);
-  if (!providers.length) notFound();
+  if (!providers.length) {
+    const newSlug = resolveSlugRedirect(slug);
+    if (newSlug) permanentRedirect(`/providers/${newSlug}`);
+    notFound();
+  }
   if (providers.length === 1) {
     const nearbyProviders = await getNearbyProviders(providers[0].id, providers[0].city, providers[0].state);
     return <ProviderDetailPage provider={providers[0]} organizationProviders={providers} nearbyProviders={nearbyProviders} />;
