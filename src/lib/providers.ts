@@ -256,7 +256,7 @@ const getProviderByLegacySlugCached = unstable_cache(async (slug: string): Promi
     const rows = await sql.unsafe(`select ${providerColumns} from providers where slug = $1 and publication_status = 'published' limit 1`, [slug]);
     return rows[0] ? (await attachReportedCredentials([toProvider(rows[0] as unknown as ProviderRow)]))[0] : null;
   } catch (error) { console.error("Legacy provider lookup failed", error); throw error; }
-}, ["provider-by-legacy-slug"], { revalidate: 3600, tags: ["providers"] });
+}, ["provider-by-legacy-slug-v2"], { revalidate: 3600, tags: ["providers"] });
 export const getProviderByLegacySlug = cache(getProviderByLegacySlugCached);
 
 const getProviderByCanonicalPathCached = unstable_cache(async (organizationSlug: string, locationSlug: string): Promise<Provider | null> => {
@@ -270,7 +270,7 @@ const getProviderByCanonicalPathCached = unstable_cache(async (organizationSlug:
     );
     return rows[0] ? (await attachReportedCredentials([toProvider(rows[0] as unknown as ProviderRow)]))[0] : null;
   } catch (error) { console.error("Provider lookup failed", error); throw error; }
-}, ["provider-by-canonical-path"], { revalidate: 3600, tags: ["providers"] });
+}, ["provider-by-canonical-path-v2"], { revalidate: 3600, tags: ["providers"] });
 export const getProviderByCanonicalPath = cache(getProviderByCanonicalPathCached);
 
 const getProvidersByOrganizationSlugCached = unstable_cache(async (organizationSlug: string): Promise<Provider[]> => {
