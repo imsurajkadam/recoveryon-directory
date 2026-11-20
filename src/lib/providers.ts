@@ -283,9 +283,9 @@ const getProvidersByOrganizationSlugCached = unstable_cache(async (organizationS
        order by ${orderBy.recommended}`,
       [organizationSlug],
     );
-    return (rows as unknown as ProviderRow[]).map(toProvider);
+    return attachReportedCredentials((rows as unknown as ProviderRow[]).map(toProvider));
   } catch (error) { console.error("Organization provider lookup failed", error); throw error; }
-}, ["providers-by-organization-slug"], { revalidate: 3600, tags: ["providers"] });
+}, ["providers-by-organization-slug-v2"], { revalidate: 3600, tags: ["providers"] });
 export const getProvidersByOrganizationSlug = cache(getProvidersByOrganizationSlugCached);
 
 // Up to 6 other published providers in the same city. When fewer than 3
