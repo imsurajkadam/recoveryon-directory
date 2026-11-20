@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Layers3, MapPin, SearchX, SlidersHorizontal } from "lucide-react";
+import { MapPin, SearchX, SlidersHorizontal } from "lucide-react";
+import { BarList, StepsDiagram } from "@/components/illustrations";
 import { JumpLinks } from "@/components/jump-links";
+import { listingSteps } from "@/lib/care-facts";
+import { withQuestionMark } from "@/lib/text-question";
 import { ListingTrustNote } from "@/components/listing-trust-note";
 import { JsonLd } from "@/components/json-ld";
 import { EditorialTrust } from "@/components/editorial-trust";
@@ -90,15 +93,17 @@ export default async function StatePage({ params, searchParams }: { params: Prom
     </div></section> : null}
     {careTypes.length ? <section className="section" id="care-types"><div className="shell">
       <div className="results-heading"><div><h2>Types of care in {state.name}</h2><p>Published listings in {state.name} by type of care. Select a type to filter the directory.</p></div></div>
-      <div className="provider-location-grid">
-        {careTypes.map((category) => <Link className="provider-location-link" href={`/directory?state=${state.code}&category=${encodeURIComponent(category.name)}`} key={category.slug} prefetch={false}><Layers3 size={18} /><span><strong>{category.name}</strong><small>{category.count.toLocaleString("en-US")} {category.count === 1 ? "listing" : "listings"}</small></span></Link>)}
-      </div>
+      <BarList items={careTypes.map((category) => ({ label: category.name, count: category.count, href: `/directory?state=${state.code}&category=${encodeURIComponent(category.name)}` }))} />
     </div></section> : null}
+    <section className="section section-snug section-tint"><div className="shell">
+      <div className="section-heading"><div><h2>How to use these {state.name} listings</h2><p>Four steps from first search to a decision.</p></div></div>
+      <StepsDiagram steps={listingSteps} />
+    </div></section>
     {editorial ? <section className="section state-guidance" id="guide"><div className="shell content-shell prose">
       <EditorialTrust />
       <h2>Finding addiction treatment in {state.name}</h2>
       <p>{editorial.intro}</p>
-      {editorial.sections.map((section) => <section key={section.heading}><h3>{section.heading}</h3><p>{section.body}</p></section>)}
+      {editorial.sections.map((section) => <section key={section.heading}><h3>{withQuestionMark(section.heading)}</h3><p>{section.body}</p></section>)}
     </div></section> : null}
     <FaqSection faqs={faqs} />
   </>;

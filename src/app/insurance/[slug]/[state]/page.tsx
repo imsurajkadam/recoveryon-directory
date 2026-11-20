@@ -5,6 +5,7 @@ import { ArrowRight, MapPin, SlidersHorizontal } from "lucide-react";
 import { JumpLinks } from "@/components/jump-links";
 import { ListingTrustNote } from "@/components/listing-trust-note";
 import { FaqSection } from "@/components/faq-section";
+import { InsuranceExplainer } from "@/components/insurance-explainer";
 import { JsonLd } from "@/components/json-ld";
 import { Pagination } from "@/components/pagination";
 import { ProviderCard } from "@/components/provider-card";
@@ -125,6 +126,7 @@ export default async function StateMedicaidPage({ params, searchParams }: { para
       <div className="state-grid">{medicaidStates.filter((item) => item.code !== state.code).map((item) => { const other = stateByCode(item.code); return other ? <Link key={item.code} href={`/insurance/medicaid/${other.slug}`} prefetch={false}><MapPin size={18} /><span>{other.name}</span><ArrowRight size={16} /></Link> : null; })}</div>
     </div></section>
 
+    <InsuranceExplainer insurerName="Medicaid" />
     <FaqSection faqs={faqs} />
   </>;
 }

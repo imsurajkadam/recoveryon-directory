@@ -1,3 +1,4 @@
+import { withQuestionMark } from "@/lib/text-question";
 import type { Provider } from "@/lib/types";
 
 export type FaqEntry = { question: string; answer: string };
@@ -26,7 +27,7 @@ export function buildFaqPageJsonLd(faqs: FaqEntry[]) {
     "@type": "FAQPage",
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
-      name: faq.question,
+      name: withQuestionMark(faq.question),
       acceptedAnswer: { "@type": "Answer", text: faq.answer },
     })),
   };

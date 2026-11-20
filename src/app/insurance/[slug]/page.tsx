@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { InsuranceExplainer } from "@/components/insurance-explainer";
 import { ListingTrustNote } from "@/components/listing-trust-note";
 import { insurers } from "@/lib/insurance-data";
 
@@ -54,6 +55,7 @@ export default async function InsurancePage({ params }: { params: Promise<{ slug
         {total > providers.length && <p style={{ marginTop: 24 }}><Link className="text-link" href={`/directory?insurance=${encodeURIComponent(insurer.name)}${insurer.state ? `&state=${insurer.state}` : ""}`}>View all {total.toLocaleString("en-US")} listings in the directory <ArrowRight size={17} /></Link></p>}
       </> : <div className="empty-state"><h2>No listings found</h2><p>We have not yet tagged providers accepting {insurer.name}. <Link href="/directory">Browse all listings</Link> or <Link href="/insurance">compare other insurance options</Link>.</p></div>}
     </div></section>
+    <InsuranceExplainer insurerName={insurer.name} />
     {insurer.slug === "medicaid" ? <section className="section"><div className="shell">
       <div className="section-heading"><div><span className="kicker plain">By state</span><h2>Rehabs that accept Medicaid, by state</h2><p>Each state runs its own Medicaid program, so covered services and how to start treatment differ.</p></div></div>
       <div className="state-grid">{medicaidStates.map((item) => { const state = stateByCode(item.code); return state ? <Link key={item.code} href={`/insurance/medicaid/${state.slug}`} prefetch={false}><ShieldCheck size={18} /><span>{state.name}</span><ArrowRight size={16} /></Link> : null; })}</div>
