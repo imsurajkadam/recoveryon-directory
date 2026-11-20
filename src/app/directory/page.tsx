@@ -66,7 +66,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
     <>
       <section className="page-hero page-hero-compact"><div className="shell">
         <h1>Find treatment and recovery resources</h1>
-        <p>Search {result.total ? `${result.total.toLocaleString("en-US")} ` : ""}listings by service, location, and insurance. Confirm licensing, availability, and cost directly with each provider.</p>
+        <p className="hide-mobile">Search {result.total ? `${result.total.toLocaleString("en-US")} ` : ""}listings by service, location, and insurance. Confirm licensing, availability, and cost directly with each provider.</p>
         <form className="filter-bar" method="get" action="/directory">
           {verified && <input type="hidden" name="verified" value="1" />}
           <div className="filter-bar-main">
@@ -76,7 +76,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
             <label>State<select name="state" defaultValue={state}><option value="">All states</option>{states.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
             <DirectoryFilterSubmit label="Search" />
           </div>
-          <details className="filter-more" open={moreCount > 0}>
+          <details className="filter-more">
             <summary><SlidersHorizontal size={16} aria-hidden="true" /> More filters: insurance, level of care, specialty, sort{moreCount > 0 ? <span className="filter-count">{moreCount}</span> : null}</summary>
             <div className="filter-more-grid">
               <label>Insurance or payment<select name="insurance" defaultValue={insurance}><option value="">All payment options</option>{facets.insurance.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
@@ -97,7 +97,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
           {activeFilters.map((item) => <Link key={item.key} href={hrefWithout(item.key)} prefetch={false} rel="nofollow" aria-label={`Remove filter: ${item.label}`}>{item.label} <X size={13} aria-hidden="true" /></Link>)}
           <Link className="clear-filters" href="/directory" prefetch={false}>Clear all</Link>
         </div>}
-        <ListingTrustNote />
+        {result.providers.length ? <ListingTrustNote /> : null}
         {result.providers.length ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname="/directory" params={paginationParams} page={result.page} totalPages={result.totalPages} /></> : <div className="empty-state"><SearchX size={36} /><h2>No matching listings</h2><p>Try removing a filter, or suggest an organization for review.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}
       </div></section>
     </>

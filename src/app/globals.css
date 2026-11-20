@@ -626,3 +626,11 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
   .provider-grid { grid-template-columns: 1fr; }
   .section.section-home-listings { padding: 44px 0 56px; }
 }
+.hero-inner { padding: clamp(48px, 6vw, 84px) 0 56px; }
+.section.section-home-listings { padding-top: 44px; }
+.section-home-listings .section-heading { margin-bottom: 26px; }
+@media (max-width: 760px) {
+  .hero-inner { padding: 44px 0 40px; }
+  .section.section-home-listings { padding-top: 36px; }
+}
+@media (max-width: 760px) { .page-hero-compact p.hide-mobile { display: none; } .page-hero-compact h1 { font-size: 1.45rem; } }
