@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, MapPin, SlidersHorizontal } from "lucide-react";
+import { JumpLinks } from "@/components/jump-links";
+import { ListingTrustNote } from "@/components/listing-trust-note";
 import { FaqSection } from "@/components/faq-section";
 import { JsonLd } from "@/components/json-ld";
 import { Pagination } from "@/components/pagination";
@@ -88,28 +90,35 @@ export default async function StateMedicaidPage({ params, searchParams }: { para
     <JsonLd data={breadcrumbJsonLd} />
     {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
     <JsonLd data={buildFaqPageJsonLd(faqs)} />
-    <section className="page-hero"><div className="shell">
+    <section className="page-hero page-hero-compact"><div className="shell">
       <div className="breadcrumb"><Link href="/insurance" prefetch={false}>Insurance</Link><span>/</span><Link href="/insurance/medicaid" prefetch={false}>Medicaid</Link><span>/</span><span>{state.name}</span></div>
       <h1>{total.toLocaleString("en-US")} Rehabs That Accept Medicaid in {state.name}</h1>
-      <p>{total.toLocaleString("en-US")} of the {stateTotal.total.toLocaleString("en-US")} treatment and recovery listings in {state.name} report accepting Medicaid{program.toLowerCase().includes("medicaid") ? "" : `, known in ${state.name} as ${program}`}. Compare them by city and type of care, then confirm network status with the provider and your plan.</p>
-      <div className="inline-actions"><a className="button" href="#listings">View {total.toLocaleString("en-US")} listings</a><Link className="button button-secondary" href={`/locations/${state.slug}`} prefetch={false}>All treatment in {state.name}</Link>{isCalifornia ? <Link className="button button-secondary" href="/insurance/medi-cal" prefetch={false}>Listings that say Medi-Cal</Link> : null}</div>
+      <p>{total.toLocaleString("en-US")} of the {stateTotal.total.toLocaleString("en-US")} treatment and recovery listings in {state.name} report accepting Medicaid{program.toLowerCase().includes("medicaid") ? "" : `, known in ${state.name} as ${program}`}. Confirm network status with the provider and your plan.</p>
+      <JumpLinks label="On this page" links={[
+        ...(cities.length ? [{ href: "#cities", label: "By city" }] : []),
+        ...(careCounts.length ? [{ href: "#care-types", label: "By type of care" }] : []),
+        { href: "#faqs", label: "FAQs" },
+        { href: `/locations/${state.slug}`, label: `All treatment in ${state.name}` },
+        ...(isCalifornia ? [{ href: "/insurance/medi-cal", label: "Listings that say Medi-Cal" }] : []),
+      ]} />
     </div></section>
 
-    {careCounts.length ? <section className="section"><div className="shell">
-      <div className="results-heading"><div><h2>Medicaid listings by type of care</h2><p>Counts of {state.name} listings that report accepting Medicaid.</p></div></div>
-      <div className="provider-location-grid">{careCounts.map(({ type, count }) => <div className="provider-location-link" key={type.slug}><ArrowRight size={18} /><span><strong>{type.label}</strong><small>{count.toLocaleString("en-US")} accept Medicaid</small></span></div>)}</div>
-    </div></section> : null}
+    <section className="section section-listings" id="listings"><div className="shell">
+      <div className="results-bar"><h2>Listings that accept Medicaid in {state.name}</h2><Link className="verified-toggle" href={`/directory?state=${state.code}&insurance=Medicaid`} prefetch={false}><SlidersHorizontal size={16} /> Filters</Link></div>
+      <ListingTrustNote />
+      <div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div>
+      <Pagination pathname={path} page={result.page} totalPages={result.totalPages} />
+    </div></section>
 
-    {cities.length ? <section className="section section-tint"><div className="shell">
+    {cities.length ? <section className="section section-tint" id="cities"><div className="shell">
       <div className="results-heading"><div><h2>Cities with the most Medicaid listings</h2></div></div>
       <div className="provider-location-grid">{cities.map((item) => <Link className="provider-location-link" href={cityPath(state, item.city)} key={item.city} prefetch={false}><MapPin size={18} /><span><strong>{item.city}</strong><small>{item.count.toLocaleString("en-US")} accept Medicaid</small></span></Link>)}</div>
     </div></section> : null}
 
-    <section className="section" id="listings"><div className="shell">
-      <div className="results-heading"><div><h2>Listings that accept Medicaid in {state.name}</h2><p>Insurance details come from source records and provider updates. Confirm before starting treatment.</p></div></div>
-      <div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div>
-      <Pagination pathname={path} page={result.page} totalPages={result.totalPages} />
-    </div></section>
+    {careCounts.length ? <section className="section" id="care-types"><div className="shell">
+      <div className="results-heading"><div><h2>Medicaid listings by type of care</h2><p>Counts of {state.name} listings that report accepting Medicaid. Insurance details come from source records and provider updates.</p></div></div>
+      <div className="provider-location-grid">{careCounts.map(({ type, count }) => <div className="provider-location-link" key={type.slug}><ArrowRight size={18} /><span><strong>{type.label}</strong><small>{count.toLocaleString("en-US")} accept Medicaid</small></span></div>)}</div>
+    </div></section> : null}
 
     <section className="section section-tint"><div className="shell">
       <div className="section-heading"><div><span className="kicker plain">Other states</span><h2>Medicaid rehab in other states</h2></div><Link className="text-link" href="/insurance/medicaid" prefetch={false}>All Medicaid listings <ArrowRight size={17} /></Link></div>

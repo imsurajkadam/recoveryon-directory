@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { ArrowRight, MapPin, SearchX } from "lucide-react";
+import { ArrowRight, MapPin, SearchX, SlidersHorizontal } from "lucide-react";
+import { JumpLinks } from "@/components/jump-links";
+import { ListingTrustNote } from "@/components/listing-trust-note";
 import { JsonLd } from "@/components/json-ld";
 import { FaqSection } from "@/components/faq-section";
 import { Pagination } from "@/components/pagination";
@@ -82,26 +84,27 @@ export default async function CityPage({ params, searchParams }: { params: Promi
     <JsonLd data={breadcrumbJsonLd} />
     {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
     {faqs.length ? <JsonLd data={buildFaqPageJsonLd(faqs)} /> : null}
-    <section className="page-hero"><div className="shell">
+    <section className="page-hero page-hero-compact"><div className="shell">
       <div className="breadcrumb"><Link href="/locations" prefetch={false}>Locations</Link><span>/</span><Link href={`/locations/${state.slug}`} prefetch={false}>{state.name}</Link><span>/</span><span>{city}</span></div>
       <h1>Addiction treatment and rehab centers in {city}, {state.code}</h1>
       <p>TreatmentLane lists {result.total.toLocaleString("en-US")} published treatment and recovery listings in {city}, {state.name}{medicaid.total > 0 ? `, including ${medicaid.total.toLocaleString("en-US")} that report accepting Medicaid` : ""}. Compare services and insurance, then confirm details directly with each provider.</p>
-      <div className="inline-actions"><a className="button" href="#listings">View {result.total.toLocaleString("en-US")} listings</a><Link className="button button-secondary" href={`/directory?state=${state.code}&location=${encodeURIComponent(city)}`} prefetch={false}>Use advanced filters</Link></div>
+      <JumpLinks label={`Care in ${city}`} links={careLinks.map(({ type, count }) => ({ href: cityCarePath(state, city, type.slug), label: type.label, count }))} />
     </div></section>
 
-    {careLinks.length ? <section className="section"><div className="shell">
+    <section className="section section-listings" id="listings"><div className="shell">
+      <div className="results-bar"><h2>{result.total.toLocaleString("en-US")} listings in {city}</h2><Link className="verified-toggle" href={`/directory?state=${state.code}&location=${encodeURIComponent(city)}`} prefetch={false}><SlidersHorizontal size={16} /> Filters</Link></div>
+      <ListingTrustNote />
+      {result.providers.length
+        ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname={path} page={result.page} totalPages={result.totalPages} /></>
+        : <div className="empty-state"><SearchX size={36} /><h2>No listings yet</h2><p>Suggest an organization for review.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}
+    </div></section>
+
+    {careLinks.length ? <section className="section section-tint" id="care-types"><div className="shell">
       <div className="results-heading"><div><h2>Types of care in {city}</h2><p>Browse {city} listings by the kind of support you need.</p></div></div>
       <div className="provider-location-grid">
         {careLinks.map(({ type, count }) => <Link className="provider-location-link" href={cityCarePath(state, city, type.slug)} key={type.slug} prefetch={false}><ArrowRight size={18} /><span><strong>{type.label} in {city}</strong><small>{count.toLocaleString("en-US")} {count === 1 ? "listing" : "listings"}</small></span></Link>)}
       </div>
     </div></section> : null}
-
-    <section className="section section-tint" id="listings"><div className="shell">
-      <div className="results-heading"><div><h2>{result.total.toLocaleString("en-US")} listings in {city}</h2><p>Featured listings appear first and are clearly labeled. TreatmentLane Verified listings were claimed and confirmed by the provider.</p></div></div>
-      {result.providers.length
-        ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname={path} page={result.page} totalPages={result.totalPages} /></>
-        : <div className="empty-state"><SearchX size={36} /><h2>No listings yet</h2><p>Suggest an organization for review.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}
-    </div></section>
 
     {nearbyCities.length ? <section className="section"><div className="shell">
       <div className="results-heading"><div><h2>Other cities in {state.name}</h2><p>Compare treatment options in nearby cities, or <Link href={`/locations/${state.slug}`} prefetch={false}>see all of {state.name}</Link>.</p></div></div>

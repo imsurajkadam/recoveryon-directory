@@ -5,6 +5,31 @@ import { careAccentStyle, getCareVisual } from "@/components/care-visuals";
 import { SearchForm } from "@/components/search-form";
 import { careCategories, featuredStateCodes, guides, states } from "@/lib/content";
 import { insurers } from "@/lib/insurance-data";
+import { ProviderCard } from "@/components/provider-card";
+import { VerifiedTick } from "@/components/verified-tick";
+import { searchProviders } from "@/lib/providers";
+import type { Provider } from "@/lib/types";
+
+export const revalidate = 3600;
+
+/** One well-documented listing per organization, so a single multi-site operator cannot fill the homepage. */
+async function getHomeListings(): Promise<{ listings: Provider[]; total: number; verifiedTotal: number }> {
+  try {
+    const [top, verified] = await Promise.all([
+      searchProviders({ pageSize: 60 }),
+      searchProviders({ verified: true, pageSize: 1 }),
+    ]);
+    const seen = new Set<string>();
+    const listings = top.providers.filter((provider) => {
+      if (!provider.featuredImageUrl || seen.has(provider.organizationSlug)) return false;
+      seen.add(provider.organizationSlug);
+      return true;
+    }).slice(0, 6);
+    return { listings, total: top.total, verifiedTotal: verified.total };
+  } catch {
+    return { listings: [], total: 0, verifiedTotal: 0 };
+  }
+}
 
 export const metadata: Metadata = {
   title: { absolute: "Find and Compare Addiction Treatment Centers in the US" },
@@ -13,7 +38,8 @@ export const metadata: Metadata = {
 };
 
 
-export default function Home() {
+export default async function Home() {
+  const { listings, total, verifiedTotal } = await getHomeListings();
   const featuredStates = states.filter((state) => featuredStateCodes.includes(state.code));
   return (
     <>
@@ -23,7 +49,7 @@ export default function Home() {
         <div className="shell hero-inner">
           <span className="kicker"><ShieldCheck size={16} /> Clear information. Better questions. Safer decisions.</span>
           <h1>Find recovery support with more confidence.</h1>
-          <p className="hero-copy">Search treatment, detox, therapy, sober living, and recovery resources. See how each listing was reviewed.</p>
+          <p className="hero-copy">Search {total ? `${total.toLocaleString("en-US")} ` : ""}treatment, detox, therapy, sober living, and recovery listings across the United States. See how each listing was reviewed.</p>
           <SearchForm />
           <div className="popular-links"><span>Explore:</span>{careCategories.slice(0, 5).map((category) => <Link key={category.slug} href={`/care/${category.slug}`} prefetch={false}>{category.shortName}</Link>)}</div>
         </div>
@@ -31,11 +57,18 @@ export default function Home() {
 
       <section className="trust-strip" aria-label="TreatmentLane principles">
         <div className="shell trust-grid">
-          <div><BadgeCheck /><span><strong>Transparent labels</strong><small>See how a listing was reviewed</small></span></div>
-          <div><ClipboardCheck /><span><strong>Practical details</strong><small>Compare services and contact information</small></span></div>
-          <div><ShieldCheck /><span><strong>No guarantees</strong><small>Confirm clinical and financial details directly</small></span></div>
+          <div><ClipboardCheck /><span><strong>{total ? `${total.toLocaleString("en-US")} listings` : "Nationwide listings"}</strong><small>All 50 states, searchable by care, city, and insurance</small></span></div>
+          <div><VerifiedTick size={30} /><span><strong>{verifiedTotal ? `${verifiedTotal.toLocaleString("en-US")} provider-verified` : "Provider-verified listings"}</strong><small>Claimed and confirmed by the provider, marked with a blue tick</small></span></div>
+          <div><BadgeCheck /><span><strong>No hidden paid ranking</strong><small>Paid placements are always labeled Featured</small></span></div>
         </div>
       </section>
+
+      {listings.length ? <section className="section section-listings section-home-listings" id="listings">
+        <div className="shell">
+          <div className="section-heading"><div><span className="kicker plain">Start comparing</span><h2>Well-documented listings to start with</h2><p>Ordered by source evidence, profile completeness, and verification. Open a profile for services, insurance, and contact details.</p></div><Link className="text-link" href="/directory" prefetch={false}>Browse all {total.toLocaleString("en-US")} listings <ArrowRight size={17} /></Link></div>
+          <div className="provider-grid">{listings.map((provider) => <ProviderCard key={provider.id} provider={provider} layout="tile" />)}</div>
+        </div>
+      </section> : null}
 
       <section className="section">
         <div className="shell">

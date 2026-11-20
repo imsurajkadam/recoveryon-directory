@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { JumpLinks } from "@/components/jump-links";
+import { ListingTrustNote } from "@/components/listing-trust-note";
 import { JsonLd } from "@/components/json-ld";
 import { FaqSection } from "@/components/faq-section";
 import { Pagination } from "@/components/pagination";
@@ -92,23 +94,29 @@ export default async function CityCarePage({ params, searchParams }: { params: P
     <JsonLd data={breadcrumbJsonLd} />
     {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
     <JsonLd data={buildFaqPageJsonLd(faqs)} />
-    <section className="page-hero"><div className="shell">
+    <section className="page-hero page-hero-compact"><div className="shell">
       <div className="breadcrumb"><Link href="/locations" prefetch={false}>Locations</Link><span>/</span><Link href={`/locations/${state.slug}`} prefetch={false}>{state.name}</Link><span>/</span><Link href={cityPath(state, city)} prefetch={false}>{city}</Link><span>/</span><span>{type.label}</span></div>
       <h1>{total.toLocaleString("en-US")} {type.label} in {city}, {state.code}</h1>
       <p>TreatmentLane lists {total.toLocaleString("en-US")} {noun} in {city}, {state.name}{medicaid.total > 0 ? `; ${medicaid.total.toLocaleString("en-US")} report accepting Medicaid` : ""}{verified.total > 0 ? ` and ${verified.total.toLocaleString("en-US")} ${verified.total === 1 ? "is" : "are"} TreatmentLane Verified` : ""}. Compare listings below and confirm details directly with each provider.</p>
-      <div className="inline-actions"><a className="button" href="#listings">View {total.toLocaleString("en-US")} listings</a><Link className="button button-secondary" href={cityPath(state, city)} prefetch={false}>All care types in {city}</Link></div>
+      <JumpLinks label="Also see" links={[
+        { href: cityPath(state, city), label: `All care in ${city}` },
+        ...otherTypeLinks.map(({ item, count }) => ({ href: cityCarePath(state, city, item.slug), label: item.label, count })),
+        { href: "#about", label: `About ${type.short}` },
+        { href: "#faqs", label: "FAQs" },
+      ]} />
     </div></section>
 
-    <section className="section"><div className="shell content-shell prose">
+    <section className="section section-listings" id="listings"><div className="shell">
+      <div className="results-bar"><h2>{type.label} in {city}</h2></div>
+      <ListingTrustNote />
+      <div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div>
+      <Pagination pathname={path} page={result.page} totalPages={result.totalPages} />
+    </div></section>
+
+    <section className="section section-tint" id="about"><div className="shell content-shell prose">
       <h2>About {type.short} in {city}</h2>
       <p>{type.intro}</p>
       <p>When you compare {type.short} options in {city}, ask about licensing or certification, staffing, insurance and total cost, and what happens after discharge. Verified listings were claimed by the provider, who confirmed their contact details directly with TreatmentLane.</p>
-    </div></section>
-
-    <section className="section section-tint" id="listings"><div className="shell">
-      <div className="results-heading"><div><h2>{type.label} in {city}</h2><p>Featured listings appear first and are clearly labeled.</p></div></div>
-      <div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div>
-      <Pagination pathname={path} page={result.page} totalPages={result.totalPages} />
     </div></section>
 
     {(otherTypeLinks.length || nearbyLinks.length) ? <section className="section"><div className="shell">

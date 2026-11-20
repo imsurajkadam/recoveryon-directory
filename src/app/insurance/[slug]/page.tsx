@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ListingTrustNote } from "@/components/listing-trust-note";
 import { insurers } from "@/lib/insurance-data";
 
 const insurerGuides: Record<string, { label: string; href: string }> = {
@@ -38,16 +39,17 @@ export default async function InsurancePage({ params }: { params: Promise<{ slug
   const otherInsurers = insurers.filter((i) => i.slug !== insurer.slug);
 
   return <>
-    <section className="page-hero"><div className="shell">
+    <section className="page-hero page-hero-compact"><div className="shell">
       <div className="breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/insurance">Insurance</Link><span>/</span><span>{insurer.name}</span></div>
       <h1>Rehab centers that accept {insurer.name}</h1>
       <p>{insurer.description}</p>
       {insurerGuides[insurer.slug] ? <p><Link className="text-link" href={insurerGuides[insurer.slug].href} prefetch={false}>Read the guide: {insurerGuides[insurer.slug].label} <ArrowRight size={17} /></Link></p> : null}
-      <div className="notice">Insurance participation changes frequently. Always verify in-network status, authorization requirements, and your expected out-of-pocket cost with both the provider and {insurer.name} before committing.</div>
     </div></section>
-    <section className="section"><div className="shell">
+    <section className="section section-listings" id="listings"><div className="shell">
       {providers.length ? <>
-        <h2>{total.toLocaleString("en-US")} listings accepting {insurer.name}</h2>
+        <div className="results-bar"><h2>{total.toLocaleString("en-US")} listings accepting {insurer.name}</h2><Link className="verified-toggle" href={`/directory?insurance=${encodeURIComponent(insurer.name)}${insurer.state ? `&state=${insurer.state}` : ""}`} prefetch={false}><SlidersHorizontal size={16} /> Filters</Link></div>
+        <div className="notice notice-compact">Insurance participation changes often. Verify in-network status, authorization requirements, and your expected out-of-pocket cost with both the provider and {insurer.name} before committing.</div>
+        <ListingTrustNote />
         <div className="provider-list">{providers.map((p) => <ProviderCard key={p.id} provider={p} />)}</div>
         {total > providers.length && <p style={{ marginTop: 24 }}><Link className="text-link" href={`/directory?insurance=${encodeURIComponent(insurer.name)}${insurer.state ? `&state=${insurer.state}` : ""}`}>View all {total.toLocaleString("en-US")} listings in the directory <ArrowRight size={17} /></Link></p>}
       </> : <div className="empty-state"><h2>No listings found</h2><p>We have not yet tagged providers accepting {insurer.name}. <Link href="/directory">Browse all listings</Link> or <Link href="/insurance">compare other insurance options</Link>.</p></div>}
