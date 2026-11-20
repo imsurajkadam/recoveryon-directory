@@ -9,6 +9,8 @@ import { ListingCta, ListingImpression } from "@/components/listing-event-tracki
 import { TrackedContactLink } from "@/components/tracked-contact-link";
 import { providerPath } from "@/lib/providers";
 import { sourceDisplayName } from "@/lib/site";
+import { listingAccreditation } from "@/lib/credentials";
+import { formatPhone } from "@/lib/phone";
 import type { Provider } from "@/lib/types";
 
 const labels = {
@@ -17,12 +19,6 @@ const labels = {
   "provider-confirmed": "TreatmentLane Verified",
   "independently-reviewed": "Independently reviewed",
 };
-
-function formatPhone(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
-  return local.length === 10 ? `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}` : phone;
-}
 
 function summarize(items: string[], limit: number) {
   const unique = items.filter((item, index) => item && items.indexOf(item) === index);
@@ -33,7 +29,8 @@ function summarize(items: string[], limit: number) {
 export function ProviderCard({ provider, layout = "row" }: { provider: Provider; layout?: "row" | "tile" }) {
   const tags = [...provider.treatmentTypes, ...provider.categories].filter((item, index, items) => items.indexOf(item) === index).slice(0, 3);
   const insuranceSummary = summarize(provider.insurance, 3);
-  const accreditationSummary = summarize(provider.accreditation, 2);
+  const accreditation = listingAccreditation(provider);
+  const accreditationSummary = summarize(accreditation.all, 2);
   const checkedOn = provider.lastVerifiedAt ? new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }) : null;
   const href = providerPath(provider);
   const isVerified = provider.verificationStatus === "provider-confirmed";
@@ -60,7 +57,7 @@ export function ProviderCard({ provider, layout = "row" }: { provider: Provider;
         <h2><Link href={href} prefetch={false}>{provider.name}</Link>{isVerified && <VerifiedTick size={20} className="verified-tick-inline" />}</h2>
         <p>{hasTemplateDescription(provider) ? buildProviderBlurb(provider) : provider.description}</p>
         {(insuranceSummary || accreditationSummary) && <ul className="provider-card-facts">
-          {accreditationSummary && <li><Award size={15} aria-hidden="true" /><span><strong>Accreditation:</strong> {accreditationSummary}</span></li>}
+          {accreditationSummary && <li><Award size={15} aria-hidden="true" /><span><strong>{accreditation.confirmed ? "Accreditation:" : "Reports accreditation:"}</strong> {accreditationSummary}</span></li>}
           {insuranceSummary && <li><ShieldCheck size={15} aria-hidden="true" /><span><strong>Reports accepting:</strong> {insuranceSummary}</span></li>}
         </ul>}
         {tags.length > 0 && <div className="tag-row">{tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>}
