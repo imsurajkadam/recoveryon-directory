@@ -12,17 +12,23 @@ import type { Provider } from "@/lib/types";
 
 export const revalidate = 3600;
 
-/** One well-documented listing per organization, so a single multi-site operator cannot fill the homepage. */
+/** Brand key from the first significant word of the name, so sister brands of one operator count as one. */
+function brandKey(name: string) {
+  return name.toLowerCase().replace(/^the\s+/, "").split(/[^a-z0-9]+/).filter(Boolean)[0] || name;
+}
+
+/** One well-documented listing per brand, so a single multi-site operator cannot fill the homepage. */
 async function getHomeListings(): Promise<{ listings: Provider[]; total: number; verifiedTotal: number }> {
   try {
     const [top, verified] = await Promise.all([
-      searchProviders({ pageSize: 60 }),
+      searchProviders({ pageSize: 100 }),
       searchProviders({ verified: true, pageSize: 1 }),
     ]);
     const seen = new Set<string>();
     const listings = top.providers.filter((provider) => {
-      if (!provider.featuredImageUrl || seen.has(provider.organizationSlug)) return false;
-      seen.add(provider.organizationSlug);
+      const key = brandKey(provider.name);
+      if (!provider.featuredImageUrl || seen.has(key)) return false;
+      seen.add(key);
       return true;
     }).slice(0, 6);
     return { listings, total: top.total, verifiedTotal: verified.total };
