@@ -8,6 +8,7 @@ import { Award, BadgeCheck, CalendarCheck, Clock3, DollarSign, ExternalLink, Glo
 import { JumpLinks } from "@/components/jump-links";
 import { accreditationLookups, listingAccreditation, listingLicensing } from "@/lib/credentials";
 import { formatPhone } from "@/lib/phone";
+import { withQuestionMark } from "@/lib/text-question";
 import { JsonLd } from "@/components/json-ld";
 import { buildFaqPageJsonLd, getProviderFaqs } from "@/lib/faq-schema";
 import { ProviderReviews } from "@/components/provider-reviews";
@@ -196,7 +197,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
         {faqs.length > 0 && <section className="listing-section" id="faqs">
           <span className="section-label">Questions</span><h2>Frequently asked questions about {provider.name}</h2>
-          {faqs.map((faq) => <section key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></section>)}
+          {faqs.map((faq) => <section key={faq.question}><h3>{withQuestionMark(faq.question)}</h3><p>{faq.answer}</p></section>)}
         </section>}
 
         {nearbyProviders.length > 0 && <section className="listing-section">

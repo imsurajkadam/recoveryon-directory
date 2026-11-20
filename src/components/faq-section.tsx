@@ -1,4 +1,5 @@
 import type { FaqEntry } from "@/lib/faq-schema";
+import { withQuestionMark } from "@/lib/text-question";
 
 export function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
   if (!faqs.length) return null;
@@ -8,7 +9,7 @@ export function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
         <h2>Frequently asked questions</h2>
         {faqs.map((faq) => (
           <section key={faq.question}>
-            <h3>{faq.question}</h3>
+            <h3>{withQuestionMark(faq.question)}</h3>
             <p>{faq.answer}</p>
           </section>
         ))}

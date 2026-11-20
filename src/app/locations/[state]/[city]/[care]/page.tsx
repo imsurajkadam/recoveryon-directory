@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { CareLadder } from "@/components/illustrations";
 import { JumpLinks } from "@/components/jump-links";
+import { careFacts } from "@/lib/care-facts";
 import { ListingTrustNote } from "@/components/listing-trust-note";
 import { JsonLd } from "@/components/json-ld";
 import { FaqSection } from "@/components/faq-section";
@@ -68,6 +70,9 @@ export default async function CityCarePage({ params, searchParams }: { params: P
   const path = cityCarePath(state, city, type.slug);
   const total = result.total;
   const noun = total === 1 ? type.singular : `${type.singular}s`;
+  const factsKey = ({ detox: "medical-detox", "sober-living": "sober-living", iop: "outpatient-programs" } as Record<string, string>)[type.slug];
+  const facts = factsKey ? careFacts[factsKey] : undefined;
+  const ladder = type.slug === "iop" ? [3] : facts?.ladder || [];
 
   const faqs: FaqEntry[] = [
     { question: `How many ${type.short} options are in ${city}, ${state.code}?`, answer: `TreatmentLane lists ${total.toLocaleString("en-US")} ${noun} in ${city}, ${state.name}${medicaid.total > 0 ? `, and ${medicaid.total.toLocaleString("en-US")} of them report accepting Medicaid` : ""}. Confirm services, availability, and cost directly with each provider.` },
@@ -118,6 +123,18 @@ export default async function CityCarePage({ params, searchParams }: { params: P
       <p>{type.intro}</p>
       <p>When you compare {type.short} options in {city}, ask about licensing or certification, staffing, insurance and total cost, and what happens after discharge. Verified listings were claimed by the provider, who confirmed their contact details directly with TreatmentLane.</p>
     </div></section>
+
+    {facts ? <section className="section section-snug"><div className="shell">
+      <div className="section-heading"><div><h2>{type.label} at a glance</h2><p>General information only. Programs differ, so confirm the details with each provider.</p></div></div>
+      <dl className="fact-grid">
+        <div><dt>Where it happens</dt><dd>{facts.setting}</dd></div>
+        <div><dt>Typical schedule</dt><dd>{facts.schedule}</dd></div>
+        <div><dt>Typical length</dt><dd>{facts.length}</dd></div>
+        <div><dt>Often a fit for</dt><dd>{facts.fits}</dd></div>
+        <div className="fact-wide"><dt>Good to know</dt><dd>{facts.next}</dd></div>
+      </dl>
+      <div style={{ marginTop: 30 }}><CareLadder current={ladder} /></div>
+    </div></section> : null}
 
     {(otherTypeLinks.length || nearbyLinks.length) ? <section className="section"><div className="shell">
       {otherTypeLinks.length ? <><div className="results-heading"><div><h2>Other care in {city}</h2></div></div>

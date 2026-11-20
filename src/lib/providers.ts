@@ -488,3 +488,30 @@ export async function getSitemapProviders() {
     return providers;
   } catch (error) { console.error("Sitemap provider lookup failed", error); throw error; }
 }
+
+export type DirectoryOverview = { total: number; verified: number; cities: number; byState: Record<string, number>; byCategory: Record<string, number> };
+
+const getDirectoryOverviewCached = unstable_cache(async (): Promise<DirectoryOverview> => {
+  const empty: DirectoryOverview = { total: 0, verified: 0, cities: 0, byState: {}, byCategory: {} };
+  const sql = getDatabase();
+  if (!sql) return empty;
+  try {
+    const [stateRows, categoryRows, totals] = await Promise.all([
+      sql`select state, count(*)::int as count from providers where publication_status = 'published' group by state`,
+      sql`select value as category, count(*)::int as count from providers cross join lateral unnest(categories) value
+          where publication_status = 'published' group by value`,
+      sql`select count(*)::int as total, count(*) filter (where verification_status = 'provider-confirmed')::int as verified,
+          count(distinct (state, city))::int as cities from providers where publication_status = 'published'`,
+    ]);
+    return {
+      total: Number(totals[0]?.total || 0), verified: Number(totals[0]?.verified || 0), cities: Number(totals[0]?.cities || 0),
+      byState: Object.fromEntries(stateRows.map((row) => [String(row.state), Number(row.count)])),
+      byCategory: Object.fromEntries(categoryRows.map((row) => [String(row.category), Number(row.count)])),
+    };
+  } catch (error) {
+    console.error("Directory overview lookup failed", error);
+    return empty;
+  }
+}, ["directory-overview"], { revalidate: 3600, tags: ["providers"] });
+/** Site-wide listing counts by state and care category, for index pages and diagrams. */
+export const getDirectoryOverview = cache(getDirectoryOverviewCached);

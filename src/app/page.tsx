@@ -8,6 +8,7 @@ import { insurers } from "@/lib/insurance-data";
 import { ProviderCard } from "@/components/provider-card";
 import { VerifiedTick } from "@/components/verified-tick";
 import { searchProviders } from "@/lib/providers";
+import { withQuestionMark } from "@/lib/text-question";
 import type { Provider } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -134,7 +135,7 @@ export default async function Home() {
       <section className="section">
         <div className="shell">
           <div className="section-heading"><div><span className="kicker plain">Decision guides</span><h2>Useful questions before choosing care</h2><p>Plain-language guidance with links to authoritative resources.</p></div><Link className="text-link" href="/guides" prefetch={false}>View all guides <ArrowRight size={17} /></Link></div>
-          <div className="guide-grid">{guides.slice(0, 6).map((guide) => <article className="guide-card" key={guide.slug}><span>Reviewed guidance</span><h3><Link href={`/guides/${guide.slug}`} prefetch={false}>{guide.title}</Link></h3><p>{guide.description}</p><Link className="card-link" href={`/guides/${guide.slug}`} prefetch={false}>Read guide <ArrowRight size={16} /></Link></article>)}</div>
+          <div className="guide-grid">{guides.slice(0, 6).map((guide) => <article className="guide-card" key={guide.slug}><span>Reviewed guidance</span><h3><Link href={`/guides/${guide.slug}`} prefetch={false}>{withQuestionMark(guide.title)}</Link></h3><p>{guide.description}</p><Link className="card-link" href={`/guides/${guide.slug}`} prefetch={false}>Read guide <ArrowRight size={16} /></Link></article>)}</div>
         </div>
       </section>
 

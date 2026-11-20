@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { ArrowRight, MapPin, SearchX, SlidersHorizontal } from "lucide-react";
+import { MapPin, SearchX, SlidersHorizontal } from "lucide-react";
+import { BarList, StepsDiagram } from "@/components/illustrations";
 import { JumpLinks } from "@/components/jump-links";
+import { listingSteps } from "@/lib/care-facts";
 import { ListingTrustNote } from "@/components/listing-trust-note";
 import { JsonLd } from "@/components/json-ld";
 import { FaqSection } from "@/components/faq-section";
@@ -101,9 +103,8 @@ export default async function CityPage({ params, searchParams }: { params: Promi
 
     {careLinks.length ? <section className="section section-tint" id="care-types"><div className="shell">
       <div className="results-heading"><div><h2>Types of care in {city}</h2><p>Browse {city} listings by the kind of support you need.</p></div></div>
-      <div className="provider-location-grid">
-        {careLinks.map(({ type, count }) => <Link className="provider-location-link" href={cityCarePath(state, city, type.slug)} key={type.slug} prefetch={false}><ArrowRight size={18} /><span><strong>{type.label} in {city}</strong><small>{count.toLocaleString("en-US")} {count === 1 ? "listing" : "listings"}</small></span></Link>)}
-      </div>
+      <BarList items={careLinks.map(({ type, count }) => ({ label: `${type.label} in ${city}`, count, href: cityCarePath(state, city, type.slug) }))} />
+      <div style={{ marginTop: 34 }}><h3 style={{ marginBottom: 14 }}>How to use these listings</h3><StepsDiagram steps={listingSteps} /></div>
     </div></section> : null}
 
     {nearbyCities.length ? <section className="section"><div className="shell">
