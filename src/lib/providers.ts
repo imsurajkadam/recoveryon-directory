@@ -82,10 +82,48 @@ function toProvider(row: ProviderRow): Provider {
     amenities: row.amenities || [], specialties: row.specialties || [], featuredImageUrl: normalizeProviderImageUrl(row.featured_image_url),
     imageUrls: rankImages((row.image_urls || []).map((image) => normalizeProviderImageUrl(image)).filter((image): image is string => Boolean(image))), priceRange: row.price_range, treatmentDuration: row.treatment_duration,
     sourceRatingValue: row.source_rating_value === null ? null : Number(row.source_rating_value), sourceRatingCount: row.source_rating_count,
-    licenseSummary: row.license_summary, accreditation: row.accreditation || [], sourceUrl: row.source_url, lastVerifiedAt: row.last_verified_at,
+    licenseSummary: row.license_summary, accreditation: row.accreditation || [], reportedAccreditation: [], reportedLicensing: [], sourceUrl: row.source_url, lastVerifiedAt: row.last_verified_at,
     updatedAt: row.updated_at, evidenceScore: row.evidence_score, verificationStatus: row.verification_status,
     isSponsored: row.is_sponsored,
   };
+}
+
+const samhsaAccreditationCodes: Record<string, string> = {
+  JC: "The Joint Commission", CARF: "CARF International", COA: "Council on Accreditation",
+  NCQA: "National Committee for Quality Assurance", HFAP: "Healthcare Facilities Accreditation Program",
+};
+const samhsaLicensingCodes: Record<string, string> = {
+  STDH: "State department of health", STMH: "State mental health department", HLA: "Hospital licensing authority",
+};
+
+/**
+ * Adds facility-reported accreditation and licensing from the matched SAMHSA record.
+ * Runs as a second query by primary key so the large source_data column is only read
+ * for the rows on the page, and only for high-confidence or SAMHSA-only matches.
+ */
+async function attachReportedCredentials<T extends Provider>(providers: T[]): Promise<T[]> {
+  const sql = getDatabase();
+  if (!sql || !providers.length) return providers;
+  try {
+    const rows = await sql.unsafe(
+      `select id, source_data->'masterRows'->0->>'Samhsa Service Codes Named' as codes from providers
+       where id = any($1::uuid[]) and source_data->'masterRows'->0->>'Match Confidence' in ('high', 'unique_samhsa')`,
+      [providers.map((provider) => provider.id)],
+    );
+    const codesById = new Map(rows.map((row) => [String(row.id), new Set(String(row.codes || "").split(/[;|]/).map((code) => code.trim()))]));
+    return providers.map((provider) => {
+      const codes = codesById.get(provider.id);
+      if (!codes) return provider;
+      return {
+        ...provider,
+        reportedAccreditation: Object.entries(samhsaAccreditationCodes).filter(([code]) => codes.has(code)).map(([, label]) => label),
+        reportedLicensing: Object.entries(samhsaLicensingCodes).filter(([code]) => codes.has(code)).map(([, label]) => label),
+      };
+    });
+  } catch (error) {
+    console.error("Reported credential lookup failed", error);
+    return providers;
+  }
 }
 
 export type ProviderSort = "recommended" | "recently-verified" | "most-reviewed" | "highest-rated" | "alphabetical";
@@ -165,7 +203,7 @@ export async function searchProviders(input: ProviderSearch = {}): Promise<Provi
        order by ${orderBy[sort]} limit $${params.length + 1} offset $${params.length + 2}`,
       [...params, pageSize, (page - 1) * pageSize],
     );
-    return { providers: (rows as unknown as ProviderRow[]).map(toProvider), total, page, totalPages };
+    return { providers: await attachReportedCredentials((rows as unknown as ProviderRow[]).map(toProvider)), total, page, totalPages };
   } catch (error) {
     console.error("Provider search failed", error);
     throw error;
@@ -191,7 +229,7 @@ export async function searchNearestProviders(lat: number, lng: number, filter: N
        order by distance_miles limit $${params.length + 1}`,
       [...params, limit],
     );
-    return rows.map((row) => ({ ...toProvider(row as unknown as ProviderRow), distanceMiles: Number(row.distance_miles) }));
+    return attachReportedCredentials(rows.map((row) => ({ ...toProvider(row as unknown as ProviderRow), distanceMiles: Number(row.distance_miles) })));
   };
   try {
     const near = await run(2);
@@ -216,7 +254,7 @@ const getProviderByLegacySlugCached = unstable_cache(async (slug: string): Promi
   if (!sql) return null;
   try {
     const rows = await sql.unsafe(`select ${providerColumns} from providers where slug = $1 and publication_status = 'published' limit 1`, [slug]);
-    return rows[0] ? toProvider(rows[0] as unknown as ProviderRow) : null;
+    return rows[0] ? (await attachReportedCredentials([toProvider(rows[0] as unknown as ProviderRow)]))[0] : null;
   } catch (error) { console.error("Legacy provider lookup failed", error); throw error; }
 }, ["provider-by-legacy-slug"], { revalidate: 3600, tags: ["providers"] });
 export const getProviderByLegacySlug = cache(getProviderByLegacySlugCached);
@@ -230,7 +268,7 @@ const getProviderByCanonicalPathCached = unstable_cache(async (organizationSlug:
        where organization_slug = $1 and location_slug = $2 and publication_status = 'published' limit 1`,
       [organizationSlug, locationSlug],
     );
-    return rows[0] ? toProvider(rows[0] as unknown as ProviderRow) : null;
+    return rows[0] ? (await attachReportedCredentials([toProvider(rows[0] as unknown as ProviderRow)]))[0] : null;
   } catch (error) { console.error("Provider lookup failed", error); throw error; }
 }, ["provider-by-canonical-path"], { revalidate: 3600, tags: ["providers"] });
 export const getProviderByCanonicalPath = cache(getProviderByCanonicalPathCached);

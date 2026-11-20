@@ -4,7 +4,10 @@ import { cityCarePath, cityCareTypes, cityPath, isIndexedCityCarePage, stateByCo
 import { buildProviderSummary, hasTemplateDescription } from "@/lib/provider-summary";
 import { VerifiedTick } from "@/components/verified-tick";
 import Link from "next/link";
-import { BadgeCheck, Clock3, DollarSign, ExternalLink, Images, Layers3, MapPin, MapPinned, Phone, Star } from "lucide-react";
+import { Award, BadgeCheck, CalendarCheck, Clock3, DollarSign, ExternalLink, Globe, Images, Layers3, MapPin, MapPinned, Phone, ShieldCheck, Star } from "lucide-react";
+import { JumpLinks } from "@/components/jump-links";
+import { accreditationLookups, listingAccreditation, listingLicensing } from "@/lib/credentials";
+import { formatPhone } from "@/lib/phone";
 import { JsonLd } from "@/components/json-ld";
 import { buildFaqPageJsonLd, getProviderFaqs } from "@/lib/faq-schema";
 import { ProviderReviews } from "@/components/provider-reviews";
@@ -40,6 +43,17 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
   const mapQuery = [provider.address, provider.city, provider.state, provider.postalCode].filter(Boolean).join(", ");
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
   const faqs = getProviderFaqs(provider);
+  const accreditation = listingAccreditation(provider);
+  const licensing = listingLicensing(provider);
+  const lookups = accreditation.all.map((name) => accreditationLookups[name]).filter(Boolean);
+  const reviewedOn = provider.lastVerifiedAt ? new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }) : null;
+  const heroFacts = [
+    careTypes[0] && { icon: <Layers3 size={15} />, text: careTypes[0] },
+    accreditation.all.length > 0 && { icon: <Award size={15} />, text: `${accreditation.confirmed ? "Accredited:" : "Reports accreditation:"} ${accreditation.all.slice(0, 2).join(", ")}` },
+    provider.insurance.length > 0 && { icon: <ShieldCheck size={15} />, text: `${provider.insurance.length} insurance or payment ${provider.insurance.length === 1 ? "option" : "options"} listed` },
+    ratingValue !== null && ratingCount !== null && ratingCount > 0 && { icon: <Star size={15} />, text: `${ratingValue.toFixed(1)} from ${ratingCount.toLocaleString("en-US")} ${sourceName ? `${sourceName} ` : ""}ratings` },
+    reviewedOn && { icon: <CalendarCheck size={15} />, text: `Details checked ${reviewedOn}` },
+  ].filter((fact): fact is { icon: React.JSX.Element; text: string } => Boolean(fact));
   const jsonLd = {
     "@context": "https://schema.org", "@type": "MedicalBusiness", name: provider.name,
     url: absoluteUrl(path), telephone: provider.phone || undefined,
@@ -65,6 +79,12 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           </div>
         </details>
       </div>
+      {heroFacts.length > 0 && <ul className="provider-hero-facts">{heroFacts.map((fact) => <li key={fact.text}>{fact.icon}<span>{fact.text}</span></li>)}</ul>}
+      <div className="provider-hero-actions">
+        {provider.phone && <TrackedContactLink className="button" href={`tel:${provider.phone}`}><Phone size={17} /> Call {formatPhone(provider.phone)}</TrackedContactLink>}
+        {provider.website && <TrackedContactLink className="button button-secondary" href={provider.website} rel="noopener noreferrer nofollow" target="_blank"><Globe size={17} /> Official website</TrackedContactLink>}
+        <TrackedContactLink className="button button-secondary" href={mapUrl} rel="noopener noreferrer nofollow" target="_blank"><MapPinned size={17} /> Directions</TrackedContactLink>
+      </div>
     </div></section>
 
     {provider.verificationStatus === "provider-confirmed" && <section className="shell"><div className="claimed-banner"><VerifiedTick size={30} /><p><strong>TreatmentLane Verified.</strong> This listing has been claimed by {provider.name}. The provider confirmed their details directly with TreatmentLane{provider.lastVerifiedAt ? ` on ${new Date(provider.lastVerifiedAt).toLocaleDateString("en-US", { dateStyle: "long" })}` : ""}, so the contact details on this page are the ones they asked us to show.</p></div></section>}
@@ -80,9 +100,19 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
         : <>Photos are hosted by TreatmentLane and may have been supplied by the organization. Confirm that photos are current before making a decision.</>}</p>
     </section>}
 
+    <div className="shell provider-jump"><JumpLinks label="On this page" links={[
+      { href: "#overview", label: "Overview" },
+      { href: "#credentials", label: "Licensing and accreditation" },
+      { href: "#care", label: "Care options" },
+      { href: "#payment", label: "Insurance and cost" },
+      { href: "#amenities", label: "Amenities" },
+      ...(faqs.length ? [{ href: "#faqs", label: "FAQs" }] : []),
+      { href: "#contact", label: "Contact" },
+    ]} /></div>
+
     <div className={`shell provider-detail-grid${isVerified ? " is-verified" : ""}`}>
       <main className="provider-content">
-        <div className={`notice${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>{provider.verificationStatus === "provider-confirmed" ? <><strong>TreatmentLane Verified.</strong> This provider has claimed this listing and confirmed the details below directly with TreatmentLane.</> : provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>
+        {!isVerified && <div className="notice notice-compact">{provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>}
 
         {provider.isSponsored && <div className="featured-profile-notice"><strong>Featured profile.</strong> This organization pays a flat monthly fee for enhanced placement, a longer profile, and photos. Payment does not affect its verification status.</div>}
 
@@ -102,7 +132,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <Link className="text-link provider-all-locations-link" href={`/providers/${provider.organizationSlug}`} prefetch={false}>View all {provider.name} locations</Link>
         </section>}
 
-        <section className="listing-section">
+        <section className="listing-section" id="overview">
           <span className="section-label">Overview</span><h2>About {provider.name}</h2>
           {hasTemplateDescription(provider) ? buildProviderSummary(provider).map((paragraph, index) => <p className={index === 0 ? "listing-lead" : "listing-summary"} key={index}>{paragraph}</p>) : <p className="listing-lead">{provider.description}</p>}
           {(provider.priceRange || provider.treatmentDuration || provider.sourceRatingValue !== null || careTypes.length > 0) && <div className="quick-facts">
@@ -113,7 +143,29 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           </div>}
         </section>
 
-        <section className="listing-section">
+        <section className="listing-section" id="credentials">
+          <span className="section-label">Safety checks</span><h2>Licensing and accreditation</h2>
+          {provider.licenseSummary && <p>{provider.licenseSummary}</p>}
+          <div className="credential-grid">
+            <div className="credential-card">
+              <h3><Award size={18} /> Accreditation</h3>
+              {accreditation.all.length ? <>
+                <InformationTags items={accreditation.all} />
+                <p className="credential-source">{accreditation.confirmed ? "Confirmed by the provider with TreatmentLane." : "Reported by this facility to SAMHSA, the federal agency that surveys treatment facilities. TreatmentLane has not independently confirmed it."}</p>
+              </> : <p className="credential-source">No accreditation is on file for this location. Ask whether it is accredited by The Joint Commission or CARF, and for which programs.</p>}
+            </div>
+            <div className="credential-card">
+              <h3><ShieldCheck size={18} /> Licensing</h3>
+              {licensing.length ? <>
+                <InformationTags items={licensing} />
+                <p className="credential-source">Licensing or certifying authorities this facility reported to SAMHSA. Ask for the license number and check it with the state agency.</p>
+              </> : <p className="credential-source">No licensing authority is on file for this location. Ask which state agency licenses it and verify the license directly.</p>}
+            </div>
+          </div>
+          <p className="section-caution">Accreditation and licenses can lapse or apply to only some programs. Check current status at the source: {lookups.map((lookup) => <span key={lookup.href}><a href={lookup.href} rel="noopener noreferrer nofollow" target="_blank">{lookup.label}</a>, </span>)}<a href="https://findtreatment.gov/" rel="noopener noreferrer nofollow" target="_blank">FindTreatment.gov</a>, or your state licensing agency.</p>
+        </section>
+
+        <section className="listing-section" id="care">
           <span className="section-label">Care options</span><h2>Treatment types and levels of care</h2>
           {careTypes.length ? <InformationTags items={careTypes} /> : <p>No treatment types are listed in the available source data. Ask the organization which levels of care it currently provides.</p>}
         </section>
@@ -123,7 +175,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           {provider.therapies.length ? <InformationTags items={provider.therapies} /> : <p>No specific therapies are listed. Confirm the clinical team, treatment methods, and program schedule directly.</p>}
         </section>
 
-        <section className="listing-section">
+        <section className="listing-section" id="payment">
           <span className="section-label">Payment</span><h2>Accepted insurance and payment options</h2>
           {provider.insurance.length ? <InformationTags items={provider.insurance} /> : <p>No accepted insurance partners are named in the available source data.</p>}
           {provider.insuranceDetails && <p className="source-detail">Source information: {provider.insuranceDetails}</p>}
@@ -131,7 +183,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <p className="section-caution">Insurance participation changes. Verify network status, authorization requirements, and expected out-of-pocket cost with both the provider and insurer.</p>
         </section>
 
-        <section className="listing-section">
+        <section className="listing-section" id="amenities">
           <span className="section-label">Environment</span><h2>Amenities and facility features</h2>
           {provider.amenities.length ? <InformationTags items={provider.amenities} /> : <p>No specific amenities are mentioned in the available source data. Ask about rooms, meals, accessibility, recreation, technology policies, and transportation.</p>}
         </section>
@@ -140,15 +192,9 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
           <span className="section-label">Program focus</span><h2>Specialties and populations served</h2><InformationTags items={provider.specialties} />
         </section>}
 
-        <section className="listing-section">
-          <span className="section-label">Safety checks</span><h2>Licensing and accreditation</h2>
-          <p>{provider.licenseSummary || "Licensing details have not yet been independently summarized by TreatmentLane. Ask which state agency licenses this location and verify the license directly."}</p>
-          {provider.accreditation.length > 0 && <InformationTags items={provider.accreditation} />}
-        </section>
-
         <ProviderReviews providerId={provider.id} providerName={provider.name} />
 
-        {faqs.length > 0 && <section className="listing-section">
+        {faqs.length > 0 && <section className="listing-section" id="faqs">
           <span className="section-label">Questions</span><h2>Frequently asked questions about {provider.name}</h2>
           {faqs.map((faq) => <section key={faq.question}><h3>{faq.question}</h3><p>{faq.answer}</p></section>)}
         </section>}
@@ -184,11 +230,11 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
         </section>
       </main>
 
-      <aside className={`detail-sidebar provider-contact-card${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>
+      <aside id="contact" className={`detail-sidebar provider-contact-card${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>
         <h2>Contact information</h2><dl>
           <dt>Location</dt><dd>{provider.address && <>{provider.address}<br /></>}{provider.city}, {provider.state} {provider.postalCode}</dd>
           <dt>Map</dt><dd><TrackedContactLink href={mapUrl} rel="noopener noreferrer nofollow" target="_blank"><MapPinned size={15} /> View map and directions</TrackedContactLink></dd>
-          {provider.phone && <><dt>Phone</dt><dd><TrackedContactLink href={`tel:${provider.phone}`}><Phone size={15} /> {provider.phone}</TrackedContactLink></dd></>}
+          {provider.phone && <><dt>Phone</dt><dd><TrackedContactLink href={`tel:${provider.phone}`}><Phone size={15} /> {formatPhone(provider.phone)}</TrackedContactLink></dd></>}
           {provider.website && <><dt>Official website</dt><dd><TrackedContactLink href={provider.website} rel="noopener noreferrer nofollow" target="_blank">Visit website <ExternalLink size={14} /></TrackedContactLink></dd></>}
           {provider.sourceUrl && <><dt>Public source</dt><dd><a href={provider.sourceUrl} rel="noopener noreferrer nofollow" target="_blank">View source record <ExternalLink size={14} /></a></dd></>}
           <dt>Listing status</dt><dd className="listing-status">{isVerified ? <VerifiedTick size={16} /> : <BadgeCheck size={15} />} {verificationLabels[provider.verificationStatus]}</dd>
@@ -199,5 +245,9 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
         <p className="form-disclaimer">TreatmentLane does not recommend or guarantee any provider. In an emergency, call 911 or 988.</p>
       </aside>
     </div>
+    {provider.phone && <div className="provider-mobile-bar">
+      <TrackedContactLink className="button" href={`tel:${provider.phone}`}><Phone size={17} /> Call</TrackedContactLink>
+      <TrackedContactLink className="button button-secondary" href={mapUrl} rel="noopener noreferrer nofollow" target="_blank"><MapPinned size={17} /> Directions</TrackedContactLink>
+    </div>}
   </>;
 }

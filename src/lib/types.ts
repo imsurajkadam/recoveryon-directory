@@ -29,6 +29,10 @@ export type Provider = {
   evidenceScore: number;
   licenseSummary: string | null;
   accreditation: string[];
+  /** Accrediting bodies the facility reported to SAMHSA's national treatment survey. Not confirmed by TreatmentLane. */
+  reportedAccreditation: string[];
+  /** Licensing or certifying authorities the facility reported to SAMHSA. Not confirmed by TreatmentLane. */
+  reportedLicensing: string[];
   sourceUrl: string | null;
   lastVerifiedAt: string | null;
   updatedAt: string;

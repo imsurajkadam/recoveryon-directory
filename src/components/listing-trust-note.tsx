@@ -10,6 +10,7 @@ export function ListingTrustNote() {
         <li>Paid placements are always labeled Featured and appear first. Nothing else is paid.</li>
         <li><VerifiedTick size={15} /> TreatmentLane Verified means the provider claimed the listing and confirmed its details with us.</li>
         <li>All other listings are ordered by source evidence, profile completeness, and review confidence.</li>
+        <li>Accreditation and insurance on a listing are reported by the facility to SAMHSA or its public source listing, unless the provider confirmed them. Check them at the source before deciding.</li>
         <li>TreatmentLane is a directory, not a referral service. Confirm licensing, insurance, and cost directly with the provider.</li>
       </ul>
       <Link href="/how-we-verify" prefetch={false}>Read how we verify listings</Link>
