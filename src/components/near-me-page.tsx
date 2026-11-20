@@ -59,7 +59,7 @@ export async function NearMePage({ careSlug }: { careSlug: string }) {
   return <>
     <JsonLd data={breadcrumbJsonLd} />
     <JsonLd data={buildFaqPageJsonLd(faqs)} />
-    <section className="page-hero"><div className="shell">
+    <section className="page-hero page-hero-compact"><div className="shell">
       <div className="breadcrumb"><Link href="/" prefetch={false}>Home</Link><span>/</span><span>{page.title}</span></div>
       <h1>{page.title}</h1>
       <p>{type.intro} TreatmentLane lists {national.total.toLocaleString("en-US")} {type.label.toLowerCase()} across the US. We show the ones closest to you first; confirm services, cost, and availability directly with each provider.</p>

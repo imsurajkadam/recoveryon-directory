@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SearchX } from "lucide-react";
+import { SearchX, SlidersHorizontal, X } from "lucide-react";
+import { ListingTrustNote } from "@/components/listing-trust-note";
 import { Pagination } from "@/components/pagination";
 import { ProviderCard } from "@/components/provider-card";
 import { DirectoryFilterSubmit } from "@/components/directory-filter-submit";
@@ -39,30 +40,66 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
     searchProviders({ keyword, location, category, state, insurance, level, specialty, verified, sort, page: requestedPage }),
     getDirectoryFacets(),
   ]);
-  const paginationParams = Object.fromEntries(Object.entries({ keyword, location, category, state, insurance, level, specialty, verified: verified ? "1" : "", sort: sort === "recommended" ? "" : sort }).filter(([, value]) => value));
+  const filterValues = { keyword, location, category, state, insurance, level, specialty, verified: verified ? "1" : "", sort: sort === "recommended" ? "" : sort };
+  const paginationParams = Object.fromEntries(Object.entries(filterValues).filter(([, value]) => value));
+  const hrefWithout = (...keys: string[]) => {
+    const search = new URLSearchParams(Object.entries(paginationParams).filter(([key]) => !keys.includes(key)));
+    const query = search.toString();
+    return query ? `/directory?${query}` : "/directory";
+  };
+  const stateName = states.find((item) => item.code === state)?.name || state;
+  const sortLabels: Record<ProviderSort, string> = { recommended: "Recommended", "recently-verified": "Recently verified", "most-reviewed": "Most reviewed", "highest-rated": "Highest source rating", alphabetical: "Alphabetical" };
+  const activeFilters = [
+    keyword && { key: "keyword", label: `"${keyword}"` },
+    location && { key: "location", label: `Near ${location}` },
+    category && { key: "category", label: category },
+    state && { key: "state", label: stateName },
+    insurance && { key: "insurance", label: `Accepts ${insurance}` },
+    level && { key: "level", label: level },
+    specialty && { key: "specialty", label: specialty },
+    verified && { key: "verified", label: "Verified only" },
+  ].filter((item): item is { key: string; label: string } => Boolean(item));
+  const moreCount = [insurance, level, specialty, sort !== "recommended" ? sort : ""].filter(Boolean).length;
+  const verifiedToggleHref = verified ? hrefWithout("verified") : `/directory?${new URLSearchParams({ ...paginationParams, verified: "1" }).toString()}`;
 
   return (
     <>
-      <section className="page-hero"><div className="shell"><span className="kicker plain">Directory</span><h1>Find treatment and recovery resources</h1><p>Use these listings as a starting point. Confirm licensing, services, availability, insurance, and cost directly before making a decision.</p></div></section>
-      <div className="shell directory-layout">
-        <form className="filter-card" method="get">
-          <h2>Filter listings</h2>
-          <label className="verified-filter"><input type="checkbox" name="verified" value="1" defaultChecked={verified} /><span><VerifiedTick size={18} /> TreatmentLane Verified only</span></label>
-          <label>Keyword<input name="keyword" defaultValue={single(params.keyword)} placeholder="Service or provider" /></label>
-          <label>Location<input name="location" defaultValue={single(params.location)} placeholder="City, state, or ZIP" /></label>
-          <label>Type of care<select name="category" defaultValue={category}><option value="">All care types</option>{careCategories.map((item) => <option key={item.slug} value={item.name}>{item.name}</option>)}</select></label>
-          <label>State<select name="state" defaultValue={state}><option value="">All states</option>{states.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
-          <label>Insurance or payment<select name="insurance" defaultValue={insurance}><option value="">All payment options</option>{facets.insurance.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label>Level of care<select name="level" defaultValue={level}><option value="">All levels</option>{facets.levels.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label>Specialty<select name="specialty" defaultValue={specialty}><option value="">All specialties</option>{facets.specialties.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label>Sort by<select name="sort" defaultValue={sort}><option value="recommended">Recommended</option><option value="recently-verified">Recently verified</option><option value="most-reviewed">Most reviewed</option><option value="highest-rated">Highest source rating</option><option value="alphabetical">Alphabetical</option></select></label>
-          <DirectoryFilterSubmit />
+      <section className="page-hero page-hero-compact"><div className="shell">
+        <h1>Find treatment and recovery resources</h1>
+        <p>Search {result.total ? `${result.total.toLocaleString("en-US")} ` : ""}listings by service, location, and insurance. Confirm licensing, availability, and cost directly with each provider.</p>
+        <form className="filter-bar" method="get" action="/directory">
+          {verified && <input type="hidden" name="verified" value="1" />}
+          <div className="filter-bar-main">
+            <label>Service or provider<input name="keyword" defaultValue={keyword} placeholder="Detox, IOP, provider name" /></label>
+            <label>City or ZIP<input name="location" defaultValue={location} placeholder="City or ZIP" /></label>
+            <label>Type of care<select name="category" defaultValue={category}><option value="">All care types</option>{careCategories.map((item) => <option key={item.slug} value={item.name}>{item.name}</option>)}</select></label>
+            <label>State<select name="state" defaultValue={state}><option value="">All states</option>{states.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
+            <DirectoryFilterSubmit label="Search" />
+          </div>
+          <details className="filter-more" open={moreCount > 0}>
+            <summary><SlidersHorizontal size={16} aria-hidden="true" /> More filters: insurance, level of care, specialty, sort{moreCount > 0 ? <span className="filter-count">{moreCount}</span> : null}</summary>
+            <div className="filter-more-grid">
+              <label>Insurance or payment<select name="insurance" defaultValue={insurance}><option value="">All payment options</option>{facets.insurance.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+              <label>Level of care<select name="level" defaultValue={level}><option value="">All levels</option>{facets.levels.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+              <label>Specialty<select name="specialty" defaultValue={specialty}><option value="">All specialties</option>{facets.specialties.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+              <label>Sort by<select name="sort" defaultValue={sort}>{(Object.keys(sortLabels) as ProviderSort[]).map((key) => <option key={key} value={key}>{sortLabels[key]}</option>)}</select></label>
+              <DirectoryFilterSubmit />
+            </div>
+          </details>
         </form>
-        <section>
-          <div className="results-heading"><div><h2>{verified && <VerifiedTick size={26} className="verified-tick-inline" />}{result.total ? `${result.total.toLocaleString()} ${verified ? "TreatmentLane Verified" : "published"} ${result.total === 1 ? "listing" : "listings"}` : verified ? "TreatmentLane Verified listings" : "Published listings"}</h2><p>Clearly labeled Featured listings appear first. Within Featured and standard groups, recommended order prioritizes strong source evidence, complete profiles, verification, and review confidence.</p></div></div>
-          {result.providers.length ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname="/directory" params={paginationParams} page={result.page} totalPages={result.totalPages} /></> : <div className="empty-state"><SearchX size={36} /><h2>No matching listings</h2><p>Try another search or suggest an organization for review.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}
-        </section>
-      </div>
+      </div></section>
+      <section className="section section-listings" id="listings"><div className="shell">
+        <div className="results-bar">
+          <h2>{verified && <VerifiedTick size={22} className="verified-tick-inline" />}{result.total ? `${result.total.toLocaleString("en-US")} ${verified ? "TreatmentLane Verified " : ""}${result.total === 1 ? "listing" : "listings"}` : "No matching listings"}{sort !== "recommended" ? <small> sorted by {sortLabels[sort].toLowerCase()}</small> : null}</h2>
+          <Link className={`verified-toggle${verified ? " is-on" : ""}`} href={verifiedToggleHref} prefetch={false} rel="nofollow" aria-current={verified ? "true" : undefined}><VerifiedTick size={16} /> Verified only</Link>
+        </div>
+        {activeFilters.length > 0 && <div className="active-filters" aria-label="Active filters">
+          {activeFilters.map((item) => <Link key={item.key} href={hrefWithout(item.key)} prefetch={false} rel="nofollow" aria-label={`Remove filter: ${item.label}`}>{item.label} <X size={13} aria-hidden="true" /></Link>)}
+          <Link className="clear-filters" href="/directory" prefetch={false}>Clear all</Link>
+        </div>}
+        <ListingTrustNote />
+        {result.providers.length ? <><div className="provider-list">{result.providers.map((provider) => <ProviderCard key={provider.id} provider={provider} />)}</div><Pagination pathname="/directory" params={paginationParams} page={result.page} totalPages={result.totalPages} /></> : <div className="empty-state"><SearchX size={36} /><h2>No matching listings</h2><p>Try removing a filter, or suggest an organization for review.</p><Link className="button" href="/providers/apply" prefetch={false}>Suggest an organization</Link></div>}
+      </div></section>
     </>
   );
 }
