@@ -44,7 +44,7 @@ export function ProviderCard({ provider, layout = "row" }: { provider: Provider;
       {provider.isSponsored && <FeaturedBadge />}
       <Link className="provider-card-media" href={href} aria-label={`View ${provider.name}`} prefetch={false}>
         {provider.featuredImageUrl
-          ? <Image src={sizedImageUrl(provider.featuredImageUrl, 480, 360)} alt={`${provider.name} facility`} fill sizes="(max-width: 760px) 100vw, 190px" unoptimized={isSourceImage(provider.featuredImageUrl)} />
+          ? <Image src={sizedImageUrl(provider.featuredImageUrl, 720, 540)} alt={`${provider.name} facility`} fill sizes="(max-width: 760px) 100vw, 280px" unoptimized={isSourceImage(provider.featuredImageUrl)} />
           : <span className="provider-card-placeholder" aria-hidden="true"><Building2 /></span>}
       </Link>
       <div className="provider-card-body">
