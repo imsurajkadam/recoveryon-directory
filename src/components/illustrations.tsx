@@ -136,7 +136,7 @@ export function StateTileMap({ states }: { states: Array<{ code: string; name: s
 
 const verificationLevels = [
   { label: "Directory listing", body: "Collected from public source data. Not yet confirmed." },
-  { label: "Data verified", body: "Matched across independent sources with dated evidence." },
+  { label: "Data verified", body: "Address and phone checked against the provider's official website." },
   { label: "TreatmentLane Verified", body: "Claimed by the provider, who confirmed the details with us." },
   { label: "Independently reviewed", body: "Checked by our team against named third-party sources." },
 ];

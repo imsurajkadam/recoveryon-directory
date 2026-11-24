@@ -19,7 +19,7 @@ import type { Provider } from "@/lib/types";
 
 export const verificationLabels = {
   listed: "Directory listing",
-  "data-verified": "TreatmentLane data verified",
+  "data-verified": "Data verified",
   "provider-confirmed": "TreatmentLane Verified",
   "independently-reviewed": "Independently reviewed",
 };
@@ -72,10 +72,10 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
       <div className="breadcrumb"><Link href="/directory" prefetch={false}>Directory</Link><span>/</span>{hasMultipleLocations ? <><Link href={`/providers/${provider.organizationSlug}`} prefetch={false}>{provider.name} locations</Link><span>/</span><span>{provider.city}</span></> : <span>{provider.name}</span>}</div>
       <div className="provider-hero-copy">
         <div>{provider.isSponsored && <span className="kicker plain">Featured listing</span>}{isVerified && <span className="kicker verified-kicker"><VerifiedTick size={16} /> TreatmentLane Verified provider</span>}<h1>{provider.name}{isVerified && <VerifiedTick size={40} className="verified-tick-title" />}</h1><p><MapPin size={18} /> {provider.city}, {provider.state}</p></div>
-        <details className={`provider-hero-status verification-badge${provider.verificationStatus === "provider-confirmed" || provider.verificationStatus === "independently-reviewed" ? " is-confirmed" : ""}${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}`}>
-          <summary>{isVerified ? <VerifiedTick size={20} /> : <BadgeCheck size={18} />} {verificationLabels[provider.verificationStatus]}</summary>
+        <details className={`provider-hero-status verification-badge${provider.verificationStatus === "provider-confirmed" || provider.verificationStatus === "independently-reviewed" ? " is-confirmed" : ""}${provider.verificationStatus === "provider-confirmed" ? " is-claimed" : ""}${provider.verificationStatus === "data-verified" ? " is-data-verified" : ""}`}>
+          <summary>{isVerified ? <VerifiedTick size={20} /> : provider.verificationStatus === "data-verified" ? <ShieldCheck size={18} /> : <BadgeCheck size={18} />} {verificationLabels[provider.verificationStatus]}</summary>
           <div className="verification-details">
-            <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "This provider claimed its listing and confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? "We verified this data against public records and source documents." : "This listing is compiled from public source data and has not yet been independently verified."}</p>
+            <p><strong>What this means:</strong> {provider.verificationStatus === "independently-reviewed" ? "Our team independently verified this listing's details against primary sources." : provider.verificationStatus === "provider-confirmed" ? "This provider claimed its listing and confirmed these details directly with TreatmentLane." : provider.verificationStatus === "data-verified" ? `We checked this listing's address and phone number against the provider's official website${reviewedOn ? ` in ${reviewedOn}` : ""}. The provider has not claimed the listing.` : "This listing is compiled from public source data and has not yet been independently verified."}</p>
             <p><Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link></p>
           </div>
         </details>
@@ -113,7 +113,7 @@ export function ProviderDetailPage({ provider, organizationProviders = [provider
 
     <div className={`shell provider-detail-grid${isVerified ? " is-verified" : ""}`}>
       <main className="provider-content">
-        {!isVerified && <div className="notice notice-compact">{provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>}
+        {!isVerified && <div className="notice notice-compact">{provider.verificationStatus === "independently-reviewed" ? <><strong>Independently reviewed.</strong> Our team verified this listing&apos;s details against primary sources.</> : provider.verificationStatus === "data-verified" ? <><strong>Data verified.</strong> We checked the address and phone number against the provider&apos;s official website. Other details come from public source data and the provider has not claimed this listing.</> : <><strong>{verificationLabels[provider.verificationStatus]}.</strong> Information below comes from public source data and has not necessarily been confirmed by the provider.</>} <Link href="/how-we-verify" prefetch={false}>Read our verification standards</Link>.</div>}
 
         {provider.isSponsored && <div className="featured-profile-notice"><strong>Featured profile.</strong> This organization pays a flat monthly fee for enhanced placement, a longer profile, and photos. Payment does not affect its verification status.</div>}
 
