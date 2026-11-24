@@ -840,3 +840,9 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
   .provider-card-media { margin: 0; border-radius: 0; aspect-ratio: 3 / 2; }
   .provider-card-tile .provider-card-media { aspect-ratio: 3 / 2; }
 }
+
+/* ---------- Data verified badge (Nov 2026) ---------- */
+:root { --checked: #1c7a4d; --checked-soft: #e7f5ee; --checked-line: #bfe3cf; }
+.verification-line.is-data-verified { padding: 4px 10px 4px 8px; border: 1px solid var(--checked-line); border-radius: 999px; background: var(--checked-soft); color: var(--checked); font-weight: 800; }
+.verification-badge.is-data-verified { background: var(--checked); border-color: var(--checked); color: #fff; }
+.verification-badge.is-data-verified a { color: #fff; }

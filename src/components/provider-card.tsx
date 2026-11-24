@@ -15,7 +15,7 @@ import type { Provider } from "@/lib/types";
 
 const labels = {
   listed: "Directory listing",
-  "data-verified": "TreatmentLane data verified",
+  "data-verified": "Data verified",
   "provider-confirmed": "TreatmentLane Verified",
   "independently-reviewed": "Independently reviewed",
 };
@@ -62,7 +62,7 @@ export function ProviderCard({ provider, layout = "row" }: { provider: Provider;
         </ul>}
         {tags.length > 0 && <div className="tag-row">{tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>}
         <div className="provider-card-meta">
-          <span className="verification-line">{isVerified ? <VerifiedTick size={16} /> : <BadgeCheck size={16} />} {labels[provider.verificationStatus]}</span>
+          <span className={`verification-line${provider.verificationStatus === "data-verified" ? " is-data-verified" : ""}`} title={provider.verificationStatus === "data-verified" ? "Address and phone checked against the provider's official website" : undefined}>{isVerified ? <VerifiedTick size={16} /> : provider.verificationStatus === "data-verified" ? <ShieldCheck size={15} /> : <BadgeCheck size={16} />} {labels[provider.verificationStatus]}</span>
           {provider.sourceRatingValue !== null && provider.sourceRatingCount !== null && <span className="source-rating"><Star size={15} /> {sourceName ? `${sourceName} source rating: ${provider.sourceRatingValue.toFixed(1)} from ${provider.sourceRatingCount.toLocaleString()} ratings` : `${provider.sourceRatingValue.toFixed(1)} source rating`}</span>}
           {checkedOn && <span className="checked-line"><CalendarCheck size={15} /> Details checked {checkedOn}</span>}
         </div>
