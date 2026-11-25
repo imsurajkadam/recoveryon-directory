@@ -49,8 +49,8 @@ function addCost(data: JobData, cost: number | undefined) {
 function cleanStrings<T>(value: T): T {
   if (typeof value === "string") {
     return value
-      .replace(/(\d)\s*[–—]\s*(\d)/g, "$1-$2")
-      .replace(/\s*[—–]\s*/g, ", ")
+      .replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, "$1-$2")
+      .replace(/\s*[\u2014\u2013]\s*/g, ", ")
       .replace(/ {2,}/g, " ")
       .trim() as T;
   }
