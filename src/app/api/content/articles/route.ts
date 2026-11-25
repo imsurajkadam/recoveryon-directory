@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isContentApiAuthorized } from "@/lib/articles";
 import { getDatabase } from "@/lib/db";
-import { uploadArticleImage } from "@/lib/r2";
+import { isOwnedImageUrl, uploadArticleWebp } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,13 @@ const articleBlockSchema = z.discriminatedUnion("type", [
     note: z.string().trim().max(400).optional(),
     items: z.array(z.object({ value: z.string().trim().min(1).max(40), label: z.string().trim().min(2).max(160) })).min(1).max(4),
   }),
-  z.object({ type: z.literal("image"), image_key: z.string().trim().regex(/^[a-z0-9-]{1,40}$/), alt: z.string().trim().min(5).max(300), caption: z.string().trim().max(300).optional() }),
+  z.object({
+    type: z.literal("image"),
+    image_key: z.string().trim().regex(/^[a-z0-9-]{1,40}$/).optional(),
+    src: z.string().url().optional(),
+    alt: z.string().trim().min(5).max(300),
+    caption: z.string().trim().max(300).optional(),
+  }),
   z.object({ type: z.literal("cta"), text: inlineText(500), label: z.string().trim().min(2).max(60), href: z.string().trim().regex(/^\/[a-z0-9\-/?=&#%.]*$/i, "CTA links must be internal paths") }),
 ]);
 
@@ -74,6 +80,7 @@ const draftSchema = z.object({
   thumbnail_base64: z.string().min(20).max(3_000_000).optional(),
   thumbnail_mime_type: z.enum(["image/webp", "image/png", "image/jpeg"]).default("image/webp"),
   images: z.array(imageSchema).max(4).default([]),
+  hero_image_url: z.string().url().optional(),
   suggested_publish_at: z.string().datetime().optional(),
   status: z.enum(["needs_medical_review", "published"]),
 }).passthrough().superRefine((value, context) => {
@@ -98,21 +105,23 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ message: "Invalid article package", issues: parsed.error.issues }, { status: 400 });
   const sql = getDatabase();
   if (!sql) return NextResponse.json({ message: "Database unavailable" }, { status: 503 });
-  const { thumbnail_base64: heroBase64, thumbnail_mime_type: heroMimeType, images, ...payload } = parsed.data;
+  const { thumbnail_base64: heroBase64, thumbnail_mime_type: heroMimeType, images, hero_image_url: suppliedHeroUrl, ...payload } = parsed.data;
 
   // Images go to R2 (images.treatmentlane.com). If R2 is unavailable the hero falls back to the
   // database and inline images are dropped, so an article is never blocked by an image problem.
   const imagePath = `${payload.slug}/${Date.now().toString(36)}`;
   const uploaded = new Map<string, string>();
   for (const image of images) {
-    const url = await uploadArticleImage(`${imagePath}-${image.key}`, image.base64, image.mime_type);
+    const url = await uploadArticleWebp(`${imagePath}-${image.key}`, image.base64);
     if (url) uploaded.set(image.key, url);
   }
-  const heroImageUrl = heroBase64 ? await uploadArticleImage(`${imagePath}-hero`, heroBase64, heroMimeType) : null;
+  const heroImageUrl = suppliedHeroUrl && isOwnedImageUrl(suppliedHeroUrl)
+    ? suppliedHeroUrl
+    : heroBase64 ? await uploadArticleWebp(`${imagePath}-hero`, heroBase64) : null;
   const thumbnailBase64 = heroBase64 && !heroImageUrl ? heroBase64 : null;
   const articleBlocks = payload.article_blocks.flatMap((block): Array<Record<string, unknown>> => {
     if (block.type !== "image") return [block];
-    const src = uploaded.get(block.image_key);
+    const src = (block.image_key && uploaded.get(block.image_key)) || (block.src && isOwnedImageUrl(block.src) ? block.src : null);
     return src ? [{ ...block, src }] : [];
   });
   const databasePayload = JSON.parse(JSON.stringify({ ...payload, article_blocks: articleBlocks, hero_image_url: heroImageUrl || undefined }));
@@ -124,7 +133,7 @@ export async function POST(request: Request) {
     values (${payload.content_unit_id}, ${idempotencyKey}, ${payload.slug}, ${payload.title},
       ${payload.excerpt}, ${payload.seo_title}, ${payload.meta_description}, ${payload.primary_keyword},
       ${payload.secondary_keywords}, ${payload.category}, ${payload.author_name},
-      ${sql.json(databasePayload)}::jsonb, ${thumbnailBase64}, ${heroMimeType}, ${publicationStatus},
+      ${sql.json(databasePayload)}::jsonb, ${thumbnailBase64}, ${thumbnailBase64 ? heroMimeType : "image/webp"}, ${publicationStatus},
       ${payload.suggested_publish_at || null},
       ${publicationStatus === "published" ? new Date().toISOString() : null})
     on conflict (idempotency_key) do update set
