@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Recovery and treatment decision guid
 export default async function GuidesPage() {
   const articles = await getPublishedArticleSummaries();
   const cards = [
-    ...articles.map((article) => ({ slug: article.slug, title: article.title, description: article.excerpt, reviewedOn: article.reviewedAt, thumbnail: article.hasThumbnail ? `/api/content/articles/${article.id}/thumbnail` : null, imageAlt: article.imageAlt })),
+    ...articles.map((article) => ({ slug: article.slug, title: article.title, description: article.excerpt, reviewedOn: article.reviewedAt, thumbnail: article.heroImageUrl || (article.hasThumbnail ? `/api/content/articles/${article.id}/thumbnail` : null), imageAlt: article.imageAlt })),
     ...guides.map((guide) => ({ slug: guide.slug, title: guide.title, description: guide.description, reviewedOn: guide.reviewedOn, thumbnail: null as string | null, imageAlt: "" })),
   ].filter((card, index, all) => all.findIndex((other) => other.slug === card.slug) === index);
   const groups = guideTopicOrder.map((topic) => ({ topic, cards: cards.filter((card) => guideTopic(card.slug).id === topic.id) })).filter((group) => group.cards.length > 0);

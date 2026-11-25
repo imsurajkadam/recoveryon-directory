@@ -3,15 +3,42 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isContentApiAuthorized } from "@/lib/articles";
 import { getDatabase } from "@/lib/db";
+import { uploadArticleImage } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
+const inlineText = (max: number) => z.string().trim().min(2).max(max);
+const shortText = z.string().trim().min(1).max(300);
+
 const articleBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), text: z.string().trim().min(2).max(240), level: z.union([z.literal(2), z.literal(3)]).default(2) }),
-  z.object({ type: z.literal("paragraph"), text: z.string().trim().min(2).max(5000) }),
-  z.object({ type: z.literal("callout"), text: z.string().trim().min(2).max(2000) }),
-  z.object({ type: z.literal("list"), items: z.array(z.string().trim().min(1).max(1000)).min(1).max(30) }),
+  z.object({ type: z.literal("paragraph"), text: inlineText(5000) }),
+  z.object({ type: z.literal("callout"), text: inlineText(2000), title: shortText.optional(), tone: z.enum(["info", "tip", "warning"]).default("info") }),
+  z.object({ type: z.literal("list"), items: z.array(z.string().trim().min(1).max(1000)).min(1).max(30), ordered: z.boolean().optional() }),
+  z.object({ type: z.literal("key_takeaways"), title: shortText.optional(), items: z.array(z.string().trim().min(2).max(500)).min(2).max(8) }),
+  z.object({
+    type: z.literal("table"),
+    caption: shortText.optional(),
+    headers: z.array(z.string().trim().min(1).max(120)).min(2).max(6),
+    rows: z.array(z.array(z.string().trim().max(500)).min(2).max(6)).min(1).max(25),
+  }).refine((table) => table.rows.every((row) => row.length === table.headers.length), "Every table row needs one cell per header"),
+  z.object({ type: z.literal("steps"), title: shortText.optional(), items: z.array(z.object({ title: z.string().trim().min(2).max(160), text: inlineText(1500) })).min(2).max(10) }),
+  z.object({ type: z.literal("checklist"), title: shortText.optional(), items: z.array(z.string().trim().min(2).max(400)).min(2).max(15) }),
+  z.object({
+    type: z.literal("stats"),
+    title: shortText.optional(),
+    note: z.string().trim().max(400).optional(),
+    items: z.array(z.object({ value: z.string().trim().min(1).max(40), label: z.string().trim().min(2).max(160) })).min(1).max(4),
+  }),
+  z.object({ type: z.literal("image"), image_key: z.string().trim().regex(/^[a-z0-9-]{1,40}$/), alt: z.string().trim().min(5).max(300), caption: z.string().trim().max(300).optional() }),
+  z.object({ type: z.literal("cta"), text: inlineText(500), label: z.string().trim().min(2).max(60), href: z.string().trim().regex(/^\/[a-z0-9\-/?=&#%.]*$/i, "CTA links must be internal paths") }),
 ]);
+
+const imageSchema = z.object({
+  key: z.string().trim().regex(/^[a-z0-9-]{1,40}$/),
+  base64: z.string().min(100).max(3_000_000),
+  mime_type: z.enum(["image/webp", "image/png", "image/jpeg"]).default("image/webp"),
+});
 
 const faqSchema = z.object({
   question: z.string().trim().min(5).max(300),
@@ -44,7 +71,9 @@ const draftSchema = z.object({
   claim_source_map: z.unknown(),
   internal_links: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
   image_alt: z.string().trim().min(5).max(300),
-  thumbnail_base64: z.string().min(20).max(12_000_000).optional(),
+  thumbnail_base64: z.string().min(20).max(3_000_000).optional(),
+  thumbnail_mime_type: z.enum(["image/webp", "image/png", "image/jpeg"]).default("image/webp"),
+  images: z.array(imageSchema).max(4).default([]),
   suggested_publish_at: z.string().datetime().optional(),
   status: z.enum(["needs_medical_review", "published"]),
 }).passthrough().superRefine((value, context) => {
@@ -69,8 +98,24 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ message: "Invalid article package", issues: parsed.error.issues }, { status: 400 });
   const sql = getDatabase();
   if (!sql) return NextResponse.json({ message: "Database unavailable" }, { status: 503 });
-  const { thumbnail_base64: thumbnailBase64, ...payload } = parsed.data;
-  const databasePayload = JSON.parse(JSON.stringify(payload));
+  const { thumbnail_base64: heroBase64, thumbnail_mime_type: heroMimeType, images, ...payload } = parsed.data;
+
+  // Images go to R2 (images.treatmentlane.com). If R2 is unavailable the hero falls back to the
+  // database and inline images are dropped, so an article is never blocked by an image problem.
+  const imagePath = `${payload.slug}/${Date.now().toString(36)}`;
+  const uploaded = new Map<string, string>();
+  for (const image of images) {
+    const url = await uploadArticleImage(`${imagePath}-${image.key}`, image.base64, image.mime_type);
+    if (url) uploaded.set(image.key, url);
+  }
+  const heroImageUrl = heroBase64 ? await uploadArticleImage(`${imagePath}-hero`, heroBase64, heroMimeType) : null;
+  const thumbnailBase64 = heroBase64 && !heroImageUrl ? heroBase64 : null;
+  const articleBlocks = payload.article_blocks.flatMap((block): Array<Record<string, unknown>> => {
+    if (block.type !== "image") return [block];
+    const src = uploaded.get(block.image_key);
+    return src ? [{ ...block, src }] : [];
+  });
+  const databasePayload = JSON.parse(JSON.stringify({ ...payload, article_blocks: articleBlocks, hero_image_url: heroImageUrl || undefined }));
   const publicationStatus = payload.status;
   const rows = await sql`insert into content_articles
     (content_unit_id, idempotency_key, slug, title, excerpt, seo_title, meta_description,
@@ -79,7 +124,7 @@ export async function POST(request: Request) {
     values (${payload.content_unit_id}, ${idempotencyKey}, ${payload.slug}, ${payload.title},
       ${payload.excerpt}, ${payload.seo_title}, ${payload.meta_description}, ${payload.primary_keyword},
       ${payload.secondary_keywords}, ${payload.category}, ${payload.author_name},
-      ${sql.json(databasePayload)}::jsonb, ${thumbnailBase64 || null}, ${publicationStatus},
+      ${sql.json(databasePayload)}::jsonb, ${thumbnailBase64}, ${heroMimeType}, ${publicationStatus},
       ${payload.suggested_publish_at || null},
       ${publicationStatus === "published" ? new Date().toISOString() : null})
     on conflict (idempotency_key) do update set
@@ -91,9 +136,11 @@ export async function POST(request: Request) {
       primary_keyword = excluded.primary_keyword,
       secondary_keywords = excluded.secondary_keywords,
       category = excluded.category,
-      author_name = excluded.autor_name,
+      author_name = excluded.author_name,
       payload = excluded.payload,
-      thumbnail_base64 = coalesce(excluded.thumbnail_base64, content_articles.thumbnail_base64),
+      thumbnail_base64 = case when excluded.payload ? 'hero_image_url' then null
+        else coalesce(excluded.thumbnail_base64, content_articles.thumbnail_base64) end,
+      thumbnail_mime_type = excluded.thumbnail_mime_type,
       status = excluded.status,
       scheduled_at = excluded.scheduled_at,
       published_at = case when excluded.status = 'published'
@@ -104,7 +151,7 @@ export async function POST(request: Request) {
   if (rows[0]) {
     revalidatePath("/guides");
     revalidatePath(`/guides/${payload.slug}`);
-    return NextResponse.json({ article: rows[0], created: true }, { status: 201 });
+    return NextResponse.json({ article: rows[0], created: true, images_uploaded: uploaded.size, images_requested: images.length, hero_image_url: heroImageUrl }, { status: 201 });
   }
   const existing = await sql`select id, slug, status, scheduled_at from content_articles
     where idempotency_key = ${idempotencyKey} limit 1`;
