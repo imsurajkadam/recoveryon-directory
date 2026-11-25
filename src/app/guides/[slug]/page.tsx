@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/json-ld";
-import { getPublishedArticleBySlug, type ArticleBlock, type ArticleSource } from "@/lib/articles";
+import { blockText, getPublishedArticleBySlug, type ArticleBlock, type ArticleSource } from "@/lib/articles";
 import { guides } from "@/lib/content";
 import { ArrowRight } from "lucide-react";
 import { CareLadder, IllustratedHero, StepsDiagram } from "@/components/illustrations";
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (guide) return { title: withQuestionMark(guide.title), description: guide.description, alternates: { canonical: `/guides/${guide.slug}` }, openGraph: { type: "article", title: withQuestionMark(guide.title), description: guide.description } };
   const article = await getPublishedArticleBySlug(slug);
   if (!article) return {};
-  const image = article.hasThumbnail ? absoluteUrl(`/api/content/articles/${article.id}/thumbnail`) : undefined;
+  const image = article.heroImageUrl || (article.hasThumbnail ? absoluteUrl(`/api/content/articles/${article.id}/thumbnail`) : undefined);
   return {
     title: withQuestionMark(article.seoTitle),
     description: article.metaDescription,
@@ -38,12 +39,93 @@ function safeSource(source: ArticleSource) {
   } catch { return null; }
 }
 
+// Turns [label](/path) and [label](https://...) into links. Anything else stays plain text.
+function InlineText({ text }: { text: string }) {
+  const parts: ReactNode[] = [];
+  const pattern = /\[([^\]]{1,200})\]\(((?:https:\/\/|\/)[^\s)]{0,500})\)/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text))) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    const [, label, href] = match;
+    parts.push(href.startsWith("/")
+      ? <Link key={match.index} href={href} prefetch={false}>{label}</Link>
+      : <a key={match.index} href={href} target="_blank" rel="noopener noreferrer">{label}</a>);
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
+}
+
 function renderBlock(block: ArticleBlock, index: number) {
-  if (block.type === "heading" && block.text) return block.level === 3 ? <h3 key={index}>{withQuestionMark(block.text)}</h3> : <h2 key={index} id={slugifyHeading(block.text)}>{withQuestionMark(block.text)}</h2>;
-  if (block.type === "paragraph" && block.text) return <p key={index}>{block.text}</p>;
-  if (block.type === "callout" && block.text) return <div className="notice" key={index}>{block.text}</div>;
-  if (block.type === "list" && block.items?.length) return <ul key={index}>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>;
-  return null;
+  switch (block.type) {
+    case "heading":
+      if (!block.text) return null;
+      return block.level === 3 ? <h3 key={index}>{withQuestionMark(block.text)}</h3> : <h2 key={index} id={slugifyHeading(block.text)}>{withQuestionMark(block.text)}</h2>;
+    case "paragraph":
+      return block.text ? <p key={index}><InlineText text={block.text} /></p> : null;
+    case "callout":
+      if (!block.text) return null;
+      return <div className={`notice article-callout is-${block.tone || "info"}`} key={index} role={block.tone === "warning" ? "alert" : undefined}>
+        {block.title ? <strong className="article-callout-title">{block.title}</strong> : null}
+        <span><InlineText text={block.text} /></span>
+      </div>;
+    case "list": {
+      if (!block.items?.length) return null;
+      const items = block.items.map((item, itemIndex) => <li key={itemIndex}><InlineText text={item} /></li>);
+      return block.ordered ? <ol key={index}>{items}</ol> : <ul key={index}>{items}</ul>;
+    }
+    case "key_takeaways":
+      if (!block.items?.length) return null;
+      return <aside className="article-takeaways" key={index} aria-label="Key takeaways">
+        <h2 className="article-box-title">{block.title || "Key takeaways"}</h2>
+        <ul>{block.items.map((item, itemIndex) => <li key={itemIndex}><InlineText text={item} /></li>)}</ul>
+      </aside>;
+    case "table":
+      if (!block.headers?.length || !block.rows?.length) return null;
+      return <figure className="article-table" key={index}>
+        <div className="article-table-scroll"><table>
+          <thead><tr>{block.headers.map((header, cellIndex) => <th key={cellIndex} scope="col">{header}</th>)}</tr></thead>
+          <tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{block.headers.map((_, cellIndex) => cellIndex === 0
+            ? <th key={cellIndex} scope="row"><InlineText text={row[cellIndex] || ""} /></th>
+            : <td key={cellIndex}><InlineText text={row[cellIndex] || ""} /></td>)}</tr>)}</tbody>
+        </table></div>
+        {block.caption ? <figcaption>{block.caption}</figcaption> : null}
+      </figure>;
+    case "steps":
+      if (!block.items?.length) return null;
+      return <section className="article-steps" key={index}>
+        {block.title ? <h3>{withQuestionMark(block.title)}</h3> : null}
+        <ol>{block.items.map((item, itemIndex) => <li key={itemIndex}><strong>{item.title}</strong><p><InlineText text={item.text} /></p></li>)}</ol>
+      </section>;
+    case "checklist":
+      if (!block.items?.length) return null;
+      return <section className="article-checklist" key={index}>
+        <h3 className="article-box-title">{block.title || "Checklist"}</h3>
+        <ul>{block.items.map((item, itemIndex) => <li key={itemIndex}><InlineText text={item} /></li>)}</ul>
+      </section>;
+    case "stats":
+      if (!block.items?.length) return null;
+      return <section className="article-stats" key={index} aria-label={block.title || "TreatmentLane data"}>
+        {block.title ? <h3 className="article-box-title">{block.title}</h3> : null}
+        <div className="article-stats-grid">{block.items.map((item, itemIndex) => <div key={itemIndex}><strong>{item.value}</strong><span>{item.label}</span></div>)}</div>
+        {block.note ? <p className="article-stats-note">{block.note}</p> : null}
+      </section>;
+    case "image":
+      if (!block.src) return null;
+      return <figure className="article-figure" key={index}>
+        <Image src={block.src} alt={block.alt} width={1200} height={800} loading="lazy" />
+        {block.caption ? <figcaption>{block.caption}</figcaption> : null}
+      </figure>;
+    case "cta":
+      if (!block.href?.startsWith("/")) return null;
+      return <div className="article-inline-cta" key={index}>
+        <p><InlineText text={block.text} /></p>
+        <Link className="button" href={block.href} prefetch={false}>{block.label} <ArrowRight size={16} /></Link>
+      </div>;
+    default:
+      return null;
+  }
 }
 
 function TopicDiagram({ topic }: { topic: GuideTopic }) {
@@ -90,6 +172,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   const article = await getPublishedArticleBySlug(slug);
   if (!article) notFound();
+  const heroSrc = article.heroImageUrl || (article.hasThumbnail ? `/api/content/articles/${article.id}/thumbnail` : "");
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -100,7 +183,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     author: { "@type": "Organization", name: article.authorName },
     ...(article.reviewerName ? { reviewedBy: { "@type": "Person", name: article.reviewerName, honorificSuffix: article.reviewerCredentials || undefined } } : {}),
     mainEntityOfPage: absoluteUrl(`/guides/${article.slug}`),
-    image: article.hasThumbnail ? absoluteUrl(`/api/content/articles/${article.id}/thumbnail`) : undefined,
+    image: heroSrc ? (heroSrc.startsWith("http") ? heroSrc : absoluteUrl(heroSrc)) : undefined,
   };
   const breadcrumbSchema = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Guides", item: absoluteUrl("/guides") }, { "@type": "ListItem", position: 2, name: article.title, item: absoluteUrl(`/guides/${article.slug}`) }] };
   const faqSchema = article.faq.length ? { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: article.faq.map((item) => ({ "@type": "Question", name: withQuestionMark(item.question), acceptedAnswer: { "@type": "Answer", text: item.answer } })) } : null;
@@ -110,8 +193,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     ? `Written by ${article.authorName}. Reviewed by ${article.reviewerName}${article.reviewerCredentials ? `, ${article.reviewerCredentials}` : ""}.`
     : `Written and source-checked by ${article.authorName}.`;
   const topic = guideTopic(article.slug);
-  const articleHeadings = article.blocks.filter((block) => block.type === "heading" && block.level !== 3 && block.text).map((block) => block.text as string);
-  const minutes = readingMinutes(article.blocks.map((block) => [block.text || "", ...(block.items || [])].join(" ")));
+  const articleHeadings = article.blocks.flatMap((block) => block.type === "heading" && block.level !== 3 && block.text ? [block.text] : []);
+  const minutes = readingMinutes(article.blocks.map(blockText));
+  const hasOwnImages = article.blocks.some((block) => block.type === "image" && block.src);
   return <><JsonLd data={articleSchema} /><JsonLd data={breadcrumbSchema} />{faqSchema ? <JsonLd data={faqSchema} /> : null}
     <IllustratedHero kind={topic.art} title={withQuestionMark(article.title)}>
       <p>{article.excerpt}</p>
@@ -121,10 +205,10 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     <div className="article-layout">
       <article className="prose">
         <div className="breadcrumb"><Link href="/guides" prefetch={false}>Guides</Link><span>/</span><Link href={`/guides#${topic.id}`} prefetch={false}>{topic.label}</Link></div>
-        {article.hasThumbnail ? <Image className="article-thumbnail" src={`/api/content/articles/${article.id}/thumbnail`} alt={article.imageAlt} width={1200} height={800} priority /> : null}
+        {heroSrc ? <Image className="article-thumbnail" src={heroSrc} alt={article.imageAlt} width={1200} height={800} priority /> : null}
         <div className="notice">Educational information only. This article does not provide a diagnosis or replace advice from a qualified healthcare professional.</div>
         {article.blocks.map(renderBlock)}
-        <TopicDiagram topic={topic} />
+        {hasOwnImages ? null : <TopicDiagram topic={topic} />}
         {article.faq.length ? <section id="faqs"><h2>Frequently asked questions</h2>{article.faq.map((item) => <div className="article-faq" key={item.question}><h3>{withQuestionMark(item.question)}</h3><p>{item.answer}</p></div>)}</section> : null}
         <h2>Sources</h2><ul>{article.sources.map((source) => { const href = safeSource(source); return href ? <li key={href}><a href={href} target="_blank" rel="noopener noreferrer">{source.title || source.label || source.publisher || href}</a></li> : null; })}</ul>
       </article>

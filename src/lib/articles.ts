@@ -3,12 +3,34 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { getDatabase } from "@/lib/db";
 
-export type ArticleBlock = {
-  type: "heading" | "paragraph" | "list" | "callout";
-  text?: string;
-  items?: string[];
-  level?: 2 | 3;
-};
+// Blocks an article can be built from. Older articles only use heading, paragraph, list and callout.
+export type ArticleBlock =
+  | { type: "heading"; text: string; level?: 2 | 3 }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; items: string[]; ordered?: boolean }
+  | { type: "callout"; text: string; tone?: "info" | "tip" | "warning"; title?: string }
+  | { type: "key_takeaways"; items: string[]; title?: string }
+  | { type: "table"; headers: string[]; rows: string[][]; caption?: string }
+  | { type: "steps"; items: { title: string; text: string }[]; title?: string }
+  | { type: "checklist"; items: string[]; title?: string }
+  | { type: "stats"; items: { value: string; label: string }[]; title?: string; note?: string }
+  | { type: "image"; src?: string; image_key?: string; alt: string; caption?: string }
+  | { type: "cta"; text: string; href: string; label: string };
+
+/** Plain text of a block, for reading-time and table-of-contents purposes. */
+export function blockText(block: ArticleBlock): string {
+  switch (block.type) {
+    case "heading": case "paragraph": return block.text || "";
+    case "callout": return [block.title, block.text].filter(Boolean).join(" ");
+    case "list": case "key_takeaways": case "checklist": return (block.items || []).join(" ");
+    case "table": return [block.caption, ...(block.headers || []), ...(block.rows || []).flat()].filter(Boolean).join(" ");
+    case "steps": return (block.items || []).map((item) => `${item.title} ${item.text}`).join(" ");
+    case "stats": return (block.items || []).map((item) => `${item.value} ${item.label}`).join(" ");
+    case "image": return block.caption || "";
+    case "cta": return block.text || "";
+    default: return "";
+  }
+}
 
 export type ArticleFaq = { question: string; answer: string };
 export type ArticleSource = { title?: string; label?: string; url: string; publisher?: string };
@@ -31,6 +53,7 @@ export type PublishedArticle = {
   updatedAt: string;
   thumbnailMimeType: string;
   hasThumbnail: boolean;
+  heroImageUrl: string;
   imageAlt: string;
   blocks: ArticleBlock[];
   faq: ArticleFaq[];
@@ -76,6 +99,7 @@ function mapPublishedArticle(row: ArticleRow): PublishedArticle {
     updatedAt,
     thumbnailMimeType: text(row.thumbnail_mime_type, "image/webp"),
     hasThumbnail: Boolean(row.has_thumbnail),
+    heroImageUrl: text(payload.hero_image_url) || text(row.hero_image_url),
     imageAlt: text(payload.image_alt, text(row.title)),
     blocks: Array.isArray(payload.article_blocks) ? payload.article_blocks as ArticleBlock[] : [],
     faq: Array.isArray(payload.faq) ? payload.faq as ArticleFaq[] : [],
@@ -109,6 +133,7 @@ export async function getPublishedArticleSummaries() {
     primary_keyword, secondary_keywords, category, author_name, reviewer_name,
     reviewer_credentials, reviewed_at, published_at, updated_at,
     thumbnail_mime_type, thumbnail_base64 is not null as has_thumbnail,
+    payload->>'hero_image_url' as hero_image_url,
     '{}'::jsonb as payload
     from content_articles where status = 'published' order by published_at desc`;
   return rows.map((row) => mapPublishedArticle(row as ArticleRow));
