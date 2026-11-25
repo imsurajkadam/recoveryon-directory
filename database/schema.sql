@@ -191,3 +191,30 @@ create index if not exists content_articles_review_queue_idx
 create index if not exists content_articles_published_idx
   on content_articles(published_at desc)
   where status = 'published';
+
+-- Built-in article pipeline (src/lib/article-pipeline)
+create table if not exists content_pipeline_jobs (
+  id uuid primary key default gen_random_uuid(),
+  topic_id text not null,
+  slug text not null unique,
+  stage text not null default 'research'
+    check (stage in ('research', 'write', 'check', 'publish', 'done', 'failed')),
+  attempts integer not null default 0,
+  revisions integer not null default 0,
+  data jsonb not null default '{}'::jsonb,
+  last_error text,
+  started_on date not null,
+  locked_until timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists content_pipeline_jobs_active_idx on content_pipeline_jobs(stage, created_at);
+create table if not exists content_pipeline_days (
+  day date primary key,
+  target integer not null,
+  published integer not null default 0,
+  steps integer not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table content_pipeline_jobs enable row level security;
+alter table content_pipeline_days enable row level security;

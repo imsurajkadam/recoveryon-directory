@@ -1,0 +1,124 @@
+import "server-only";
+
+import type { ArticleFormat, ArticleTopic } from "@/lib/article-pipeline/topics";
+
+// Prompts for each pipeline stage. Kept together so tone, safety rules and block shapes stay consistent.
+
+export const VOICES = [
+  "warm and plain-spoken, like a knowledgeable friend who has helped families through this",
+  "practical consumer advocate: clear, direct, focused on saving the reader time and money",
+  "calm, clinically informed explainer who defines every term the first time it appears",
+  "myth-busting and reassuring: names common misconceptions, then corrects them with evidence",
+];
+
+const FORMATS: Record<ArticleFormat, string> = {
+  explainer: "key_takeaways, then a 2-3 sentence plain answer, a 'what it is' section, 'how it works' as a steps block, 'who it helps' as a table or checklist, the stats block, a safety callout (tone warning if there is any medical risk), a cta block, then FAQs",
+  comparison: "key_takeaways, then a short verdict paragraph, a REQUIRED comparison table (4-6 rows such as what it is, setting, typical length, cost and coverage, best for, risks), 'when to choose' sections for each option with a checklist each, the stats block, a cta, then FAQs",
+  checklist: "key_takeaways, then why this decision matters, a REQUIRED checklist block (8-12 items), a red flags callout (tone warning), a table of questions to ask and what a good answer sounds like, the stats block, a cta, then FAQs",
+  timeline: "key_takeaways, then an emergency callout (tone warning) near the top when withdrawal or overdose is involved, a REQUIRED timeline table (stage, timing, what to expect, when to get help), factors that change the timeline as a list, a steps block for getting support, the stats block, a cta, then FAQs",
+  cost: "key_takeaways, then a short answer with realistic ranges (only cited figures from the research), a REQUIRED cost table by level of care or plan type, what drives the price as a list, a steps block for lowering costs and checking coverage, a hidden costs checklist, the stats block, a cta, then FAQs",
+  qa: "key_takeaways, then a 2-3 sentence direct answer, H2 sections phrased as the real questions people ask, a table (for example plan types, or what is usually covered versus not), a steps block to check your own coverage or situation, the stats block, a cta, then FAQs",
+  steps: "key_takeaways, then who this is for, a REQUIRED steps block (5-8 actionable steps), a checklist of what to have ready, a tip callout, the stats block, a cta, then FAQs",
+};
+
+export function researchMessages(topic: ArticleTopic) {
+  return [
+    {
+      role: "system" as const,
+      content: "You are a medical research assistant for TreatmentLane, a US directory of addiction and mental health treatment providers. You search the web, open authoritative sources, and report only facts you actually found. Never invent statistics, URLs, prices or coverage rules.",
+    },
+    {
+      role: "user" as const,
+      content: [
+        `Research this topic for a consumer health article for US readers: "${topic.keyword}". Planned format: ${topic.format}.`,
+        "Prefer: SAMHSA, NIDA, NIAAA, CDC, FDA, CMS and Medicare.gov, Medicaid.gov, HealthCare.gov, VA.gov, TRICARE.mil, MedlinePlus, NIH/NCBI, state health agencies, ASAM, and the insurer's own official pages for insurance topics. Never use rehab marketing sites or forums as evidence.",
+        "Return ONLY a JSON object (no markdown) with keys:",
+        "search_intent: one sentence on what the searcher wants",
+        "key_facts: 8-14 objects {fact, source_url, source_title, publisher}, each one specific sentence with the exact page it came from",
+        "numbers: objects {value, meaning, source_url} for figures worth a table (timelines, costs, percentages, hours)",
+        "people_also_ask: 5-8 real questions people search",
+        "competitor_gaps: 4-6 things the current top results explain badly or skip",
+        "safety_notes: risks or emergency warnings the article must include",
+        "sources: 4-8 objects {title, url, publisher} for pages you actually opened (https only)",
+      ].join("\n"),
+    },
+  ];
+}
+
+export function writerMessages(input: {
+  topic: ArticleTopic;
+  voice: string;
+  research: unknown;
+  listingData: unknown;
+  existingGuides: string[];
+  feedback?: string[];
+}) {
+  const { topic } = input;
+  const data = input.listingData
+    ? `TreatmentLane listing data (describe as "TreatmentLane lists..." and never as all providers in an area): ${JSON.stringify(input.listingData)}`
+    : "No TreatmentLane data is available for this topic: leave out the stats block.";
+  const system = [
+    "You write for TreatmentLane (treatmentlane.com), a US directory that helps people compare addiction and mental health treatment providers.",
+    `Voice for this article: ${input.voice}. Do not imitate any named writer and never invent personal stories.`,
+    "This is health content: educate, never diagnose, never give individual medical instructions, never promise outcomes, and say clearly when a clinician has to decide.",
+    "Every specific fact, figure, timeline or coverage rule must come from the research JSON and be cited inline as [publisher or page title](https URL), using only URLs from the research.",
+    "STYLE RULES: no em dashes or en dashes anywhere (use commas, colons or two sentences). Any heading or title phrased as a question ends with a question mark. US spelling. Paragraphs of 2-4 sentences. Concrete and useful. Never use filler such as \"in today's world\", \"it is important to note\", \"navigating\", \"journey\", \"delve\" or \"landscape\".",
+    `Internal links: use [label](/path) only for these TreatmentLane pages: ${topic.pillar}, /directory, /insurance, /care, /emergency-help, /sober-living-near-me, /iop-near-me, /detox-centers-near-me, and these guides: ${input.existingGuides.slice(0, 120).join(", ")}.`,
+  ].join("\n");
+  const blocks = [
+    "article_blocks is an ordered array that mixes several block kinds (never only paragraphs). Allowed shapes:",
+    '{"type":"key_takeaways","items":["3-5 short sentences"]} (always first)',
+    '{"type":"heading","text":"...","level":2} or level 3',
+    '{"type":"paragraph","text":"may include [label](/path) and [source](https://...) links"}',
+    '{"type":"list","items":["..."],"ordered":false}',
+    '{"type":"table","headers":["2-6 columns"],"rows":[["exactly one cell per header"]],"caption":"optional"}',
+    '{"type":"steps","title":"optional","items":[{"title":"short","text":"1-3 sentences"}]} (2-10 items)',
+    '{"type":"checklist","title":"optional","items":["..."]} (2-15 items)',
+    '{"type":"stats","title":"From TreatmentLane listings","items":[{"value":"16,072","label":"listings accept Medicaid"}],"note":"Counts of published TreatmentLane listings as of DATE."} (2-4 items, numbers ONLY from the TreatmentLane data, with commas)',
+    '{"type":"callout","tone":"info|tip|warning","title":"optional","text":"..."} (a warning callout must tell readers to call 911 in a medical emergency and call or text 988 in a mental health crisis)',
+    '{"type":"image","image_key":"inline-1","alt":"descriptive alt text","caption":"short caption"} (exactly one, right after the second H2)',
+    '{"type":"cta","text":"one sentence","label":"2-4 words","href":"/internal-path"} (one or two, pointing to listings pages)',
+  ].join("\n");
+  const user = [
+    `Write the article for the primary keyword "${topic.keyword}". Required slug: ${topic.slug}. Category: ${topic.category}.`,
+    `Structure (${topic.format}): ${FORMATS[topic.format]}.`,
+    "Length: 1,400 to 2,000 words of body text. Cover the competitor gaps and the people-also-ask questions from the research.",
+    data,
+    `Research JSON: ${JSON.stringify(input.research)}`,
+    blocks,
+    input.feedback?.length ? `A fact-checker rejected the previous draft. Fix every one of these problems: ${input.feedback.join(" | ")}` : "",
+    "Return ONLY one JSON object with keys: title (50-65 characters, includes the keyword naturally), seo_title (max 60 characters), meta_description (140-155 characters), excerpt (1-2 sentences), secondary_keywords (4-8 strings), article_blocks, faq (4-6 objects {question, answer}), sources (the research sources you cited, as {title, url, publisher}), image_alt (alt text for the hero image), image_prompts {hero, inline} (each describes ONE simple editorial illustration for this topic).",
+  ].filter(Boolean).join("\n\n");
+  return [{ role: "system" as const, content: system }, { role: "user" as const, content: user }];
+}
+
+export function checkerMessages(article: unknown, research: unknown, listingData: unknown) {
+  return [
+    {
+      role: "system" as const,
+      content: "You are a strict medical and consumer-protection editor for TreatmentLane. You check health articles before they are published automatically.",
+    },
+    {
+      role: "user" as const,
+      content: [
+        "Check this article package against the research it was written from.",
+        `Article: ${JSON.stringify(article)}`,
+        `Research: ${JSON.stringify(research)}`,
+        `TreatmentLane listing data the writer was given (stats blocks may quote these numbers): ${JSON.stringify(listingData ?? null)}`,
+        "Blocking problems are ONLY: unsafe medical guidance; a clinical, statistical, cost or coverage claim with no matching source in the research; a contradiction of a cited source; diagnosing or giving individual treatment instructions; promised outcomes; a missing emergency warning where withdrawal, overdose or crisis is discussed; invented TreatmentLane numbers; text that reads as marketing for a specific provider.",
+        "Minor wording, style or nice-to-have additions are NOT blocking.",
+        'Return ONLY JSON: {"approved": boolean, "blocking_issues": ["..."], "suggestions": ["..."]}. approved is true only when blocking_issues is empty.',
+      ].join("\n\n"),
+    },
+  ];
+}
+
+export function imagePrompt(description: string) {
+  return [
+    `Editorial illustration for a healthcare information website: ${description}.`,
+    "Style: flat modern vector illustration, simple shapes, soft gradients, calm and trustworthy, generous empty space.",
+    "Colors: deep navy (#1F3A5F), calm teal (#2A9D8F), warm off-white background (#F4EFE6), small soft coral accents.",
+    "Landscape 3:2 composition, subject centered, readable as a small thumbnail.",
+    "Strictly no text, letters, numbers or logos. No realistic faces. No pills, capsules, syringes, needles, alcohol bottles, drugs, blood or distressed people.",
+  ].join(" ");
+}
