@@ -1,5 +1,27 @@
 import type { NextConfig } from "next";
 
+// Listings that moved onto their brand's main organization page. The old
+// single-location URLs keep working and point at the new location page.
+const regroupedProviderPaths: Array<[string, string]> = [
+  ["newport-academy-atlanta", "newport-academy/roswell"],
+  ["newport-academy-fairfax", "newport-academy/fairfax"],
+  ["newport-academy-maryland", "newport-academy/rockville"],
+  ["newport-academy-southern-california", "newport-academy/ranch"],
+  ["newport-academy-st-cloud", "newport-academy/st-cloud"],
+  ["newport-institute-young-adult-ocd-program", "newport-institute/alhambra"],
+  ["newport-institute-buffalo", "newport-institute/buffalo"],
+  ["newport-institute-connecticut", "newport-institute/congress"],
+  ["newport-institute-southern-california", "newport-institute/periwinkle"],
+  ["prairiecare-brooklyn-park-inpatient", "prairiecare/brooklyn-park-hospital"],
+  ["prairiecare-brooklyn-park-medical-office", "prairiecare/brooklyn-park-mob"],
+  ["prairiecare-edina", "prairiecare/edina"],
+  ["prairiecare-mankato", "prairiecare/mankato"],
+  ["prairiecare-maple-grove", "prairiecare/maple-grove"],
+  ["prairiecare-maplewood", "prairiecare/maplewood"],
+  ["prairiecare-rochester", "prairiecare/rochester"],
+  ["prairiecare-woodbury", "prairiecare/woodbury"],
+];
+
 const nextConfig: NextConfig = {
   agentRules: false,
   poweredByHeader: false,
@@ -18,6 +40,11 @@ const nextConfig: NextConfig = {
         destination: "https://treatmentlane.com/:path*",
         permanent: true,
       },
+      ...regroupedProviderPaths.map(([from, to]) => ({
+        source: `/providers/${from}/:rest*`,
+        destination: `/providers/${to}`,
+        permanent: true,
+      })),
     ];
   },
   async headers() {
