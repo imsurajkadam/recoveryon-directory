@@ -13,6 +13,18 @@ import { getProviderByLegacySlug, getProvidersByOrganizationSlug, getNearbyProvi
 
 export const revalidate = 3600;
 
+/**
+ * Name for a multi-location organization page. When locations are named "Brand - Site"
+ * (for example "Newport Academy - Acre"), the shared brand is used so that no single
+ * site name ends up in the page title. Otherwise the most common listing name is used.
+ */
+function organizationDisplayName(providers: Provider[]) {
+  const brands = providers.map((provider) => provider.name.split(/\s+[-\u2013]\s+/)[0].trim()).filter(Boolean);
+  const topBrand = topValues(brands.map((brand) => [brand]), 1)[0];
+  if (topBrand && topBrand.count >= Math.ceil(providers.length * 0.6)) return topBrand.label;
+  return topValues(providers.map((provider) => [provider.name]), 1)[0]?.label || providers[0].name;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const legacy = await getProviderByLegacySlug(slug);
@@ -30,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       openGraph: provider.featuredImageUrl ? { images: [{ url: provider.featuredImageUrl }] } : undefined,
     };
   }
-  const name = providers[0].name;
+  const name = organizationDisplayName(providers);
   const ctrMetadata = getOrganizationCtrMetadata(slug, name, providers.length);
   const hasIndexableLocation = providers.some(isProviderIndexable);
   return {
@@ -53,7 +65,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
     return <ProviderDetailPage provider={providers[0]} organizationProviders={providers} nearbyProviders={nearbyProviders} />;
   }
 
-  const name = topValues(providers.map((provider) => [provider.name]), 1)[0]?.label || providers[0].name;
+  const name = organizationDisplayName(providers);
   const byState = new Map<string, Provider[]>();
   for (const provider of providers) byState.set(provider.state, [...(byState.get(provider.state) || []), provider]);
   const stateGroups = [...byState.entries()]
