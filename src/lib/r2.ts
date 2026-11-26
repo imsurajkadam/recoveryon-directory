@@ -1,6 +1,7 @@
 import "server-only";
 
 import { AwsClient } from "aws4fetch";
+import sharp from "sharp";
 
 // Uploads article images to TreatmentLane's Cloudflare R2 bucket (served from images.treatmentlane.com).
 // Returns null when R2 is not configured so callers can fall back gracefully.
@@ -49,4 +50,30 @@ export async function uploadArticleImage(path: string, base64: string, mimeType:
     console.error("R2 article image upload error", key, error);
     return null;
   }
+}
+
+/** Converts any supported image to a compressed WebP (max 1400px wide) before upload. */
+export async function toWebp(base64: string) {
+  try {
+    const output = await sharp(Buffer.from(base64, "base64"))
+      .rotate()
+      .resize({ width: 1400, withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toBuffer();
+    return output.toString("base64");
+  } catch (error) {
+    console.error("Article image conversion failed", error);
+    return null;
+  }
+}
+
+/** Compresses to WebP, then uploads. Returns the public URL or null. */
+export async function uploadArticleWebp(path: string, base64: string) {
+  const webp = await toWebp(base64);
+  return webp ? uploadArticleImage(path, webp, "image/webp") : null;
+}
+
+export function isOwnedImageUrl(url: string) {
+  const base = process.env.R2_PUBLIC_BASE_URL?.replace(/\/+$/, "");
+  return Boolean(base && url.startsWith(`${base}/articles/`));
 }

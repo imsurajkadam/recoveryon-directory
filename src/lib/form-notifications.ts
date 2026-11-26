@@ -145,3 +145,8 @@ export async function notifyProviderSubmission(input: {
     ],
   });
 }
+
+/** Status emails from the automated article pipeline (failures and daily summaries). */
+export async function notifyArticlePipeline(subject: string, fields: NotificationField[]) {
+  await sendNotification({ subject: `Article pipeline: ${subject}`, replyTo: CONTACT_EMAIL, fields });
+}
