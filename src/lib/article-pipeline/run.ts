@@ -12,7 +12,7 @@ import { uploadArticleWebp } from "@/lib/r2";
 
 // The article pipeline runs one stage per call so every call fits in a serverless time limit:
 //   research -> write -> check -> publish -> done
-// Jobs live in content_pipeline_jobs; each day gets a random target of 5-10 articles (IST).
+// Jobs live in content_pipeline_jobs; each day gets a random target of 1-2 articles (IST).
 
 type Stage = "research" | "write" | "check" | "publish" | "done" | "failed";
 type JobData = {
@@ -235,7 +235,7 @@ export async function runPipelineStep(): Promise<{ action: string; more: boolean
   const sql = getDatabase();
   if (!sql) return { action: "no-database", more: false };
   const day = todayInIndia();
-  const target = 5 + Math.floor(Math.random() * 6);
+  const target = 1 + Math.floor(Math.random() * 2);
   await sql`insert into content_pipeline_days (day, target) values (${day}, ${target}) on conflict (day) do nothing`;
   const [counter] = await sql`update content_pipeline_days set steps = steps + 1 where day = ${day} returning target, published, steps`;
   if (counter.steps > MAX_STEPS_PER_DAY) return { action: "step-limit", more: false };
