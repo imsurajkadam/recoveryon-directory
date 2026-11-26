@@ -127,7 +127,7 @@ export async function saveArticlePackage(data: z.output<typeof draftSchema>, ide
   const rows = await sql`insert into content_articles
     (content_unit_id, idempotency_key, slug, title, excerpt, seo_title, meta_description,
      primary_keyword, secondary_keywords, category, author_name, payload, thumbnail_base64,
-     status, scheduled_at, published_at)
+     thumbnail_mime_type, status, scheduled_at, published_at)
     values (${payload.content_unit_id}, ${idempotencyKey}, ${payload.slug}, ${payload.title},
       ${payload.excerpt}, ${payload.seo_title}, ${payload.meta_description}, ${payload.primary_keyword},
       ${payload.secondary_keywords}, ${payload.category}, ${payload.author_name},

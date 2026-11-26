@@ -7,9 +7,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-// Vercel Cron calls this once a day with "Authorization: Bearer $CRON_SECRET". Each call answers
-// straight away, runs one pipeline stage in the background, then calls itself again until the
-// day's articles are done. Add ?status=1 to see progress without running anything.
+// Vercel Cron calls this twice a day with "Authorization: Bearer $CRON_SECRET". Each call answers
+// straight away and works through pipeline stages in the background until the day's articles are
+// done or about three minutes have passed. Add ?status=1 to see progress without running anything.
 
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -23,15 +23,27 @@ export async function GET(request: Request) {
   if (new URL(request.url).searchParams.has("status")) return NextResponse.json(await pipelineStatus());
 
   after(async () => {
+    // Run as many stages as fit in this call (a whole article usually takes about two minutes).
+    // Only hand off to a fresh call when time runs short, because Vercel limits how many times a
+    // site can call itself in a row.
+    const startedAt = Date.now();
     try {
-      const result = await runPipelineStep();
-      console.log("article pipeline step", JSON.stringify(result));
-      if (result.more) {
-        await fetch(absoluteUrl("/api/cron/articles"), {
-          headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
-          cache: "no-store",
-          signal: AbortSignal.timeout(30_000),
-        }).catch((error) => console.error("article pipeline chain failed", error));
+      for (;;) {
+        const result = await runPipelineStep();
+        console.log("article pipeline step", JSON.stringify(result));
+        if (!result.more) break;
+        if (Date.now() - startedAt > 170_000) {
+          const response = await fetch(absoluteUrl("/api/cron/articles"), {
+            headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+            cache: "no-store",
+            signal: AbortSignal.timeout(30_000),
+          }).catch((error) => {
+            console.error("article pipeline hand-off failed", error);
+            return null;
+          });
+          if (response && !response.ok) console.error("article pipeline hand-off refused", response.status);
+          break;
+        }
       }
     } catch (error) {
       console.error("article pipeline step crashed", error);
