@@ -42,8 +42,26 @@ function overlap(a: Set<string>, b: Set<string>) {
   return shared / Math.min(a.size, b.size);
 }
 
+// One shared lookup per server instance (5 minutes), so building or rendering ~100 guide pages does not
+// send ~100 identical queries to the database at once.
+const CACHE_MS = 5 * 60 * 1000;
+let cached: { at: number; value: Promise<LinkableGuide[]> } | null = null;
+
 /** All published guides: hand-written ones from content.ts plus pipeline articles from the database. */
-export async function getLinkableGuides(): Promise<LinkableGuide[]> {
+export function getLinkableGuides(): Promise<LinkableGuide[]> {
+  if (cached && Date.now() - cached.at < CACHE_MS) return cached.value;
+  const value = loadLinkableGuides();
+  cached = { at: Date.now(), value };
+  value.catch(() => { cached = null; });
+  return value;
+}
+
+/** Forces the next lookup to hit the database (used right after publishing). */
+export function clearLinkableGuidesCache() {
+  cached = null;
+}
+
+async function loadLinkableGuides(): Promise<LinkableGuide[]> {
   const articles = await getPublishedArticleSummaries().catch(() => []);
   const fromCode: LinkableGuide[] = guides.map((guide) => ({
     slug: guide.slug,

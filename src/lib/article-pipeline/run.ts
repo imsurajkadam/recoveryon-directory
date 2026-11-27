@@ -9,7 +9,7 @@ import { ARTICLE_TOPICS, type ArticleTopic } from "@/lib/article-pipeline/topics
 import { careCategories, guides } from "@/lib/content";
 import { pingIndexNow } from "@/lib/indexnow";
 import { insurers } from "@/lib/insurance-data";
-import { getLinkableGuides, rankRelated, STATIC_LINK_TARGETS } from "@/lib/internal-links";
+import { clearLinkableGuidesCache, getLinkableGuides, rankRelated, STATIC_LINK_TARGETS } from "@/lib/internal-links";
 import { getDatabase } from "@/lib/db";
 import { notifyArticlePipeline } from "@/lib/form-notifications";
 import { getListingContext } from "@/lib/listing-context";
@@ -141,6 +141,7 @@ async function runWrite(job: Job) {
   const topic = topicFor(job);
   const data = job.data;
   const existing = await existingGuidePaths();
+  clearLinkableGuidesCache();
   const linkable = await getLinkableGuides();
   const relatedGuides = rankRelated({ slug: topic.slug, keyword: topic.keyword, category: topic.category, pillar: topic.pillar }, linkable, 10)
     .map((guide) => ({ path: guide.path, title: guide.title }));
@@ -281,6 +282,7 @@ async function runLink(job: Job) {
   const linkedFrom: string[] = [];
   try {
     if (!sql) throw new Error("Database unavailable");
+    clearLinkableGuidesCache();
     const all = await getLinkableGuides();
     const self = all.find((guide) => guide.slug === topic.slug);
     const candidates = rankRelated(
