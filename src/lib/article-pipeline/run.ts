@@ -1,6 +1,7 @@
 import "server-only";
 
 import { saveArticlePackage, validateArticlePackage } from "@/lib/article-store";
+import { pipelineChat, usingClaude } from "@/lib/article-pipeline/llm";
 import { MODELS, openAiImage, openRouterChat, parseJsonReply } from "@/lib/article-pipeline/openrouter";
 import { checkerMessages, imagePrompt, researchMessages, VOICES, writerMessages } from "@/lib/article-pipeline/prompts";
 import { ARTICLE_TOPICS, type ArticleTopic } from "@/lib/article-pipeline/topics";
@@ -12,7 +13,8 @@ import { uploadArticleWebp } from "@/lib/r2";
 
 // The article pipeline runs one stage per call so every call fits in a serverless time limit:
 //   research -> write -> check -> publish -> done
-// Jobs live in content_pipeline_jobs; each day gets a random target of 1-2 articles (IST).
+// Jobs live in content_pipeline_jobs; each day gets a random target (IST): 5-10 articles while
+// Claude credits are in use, 1-2 once the pipeline is back on DeepSeek (OpenRouter).
 
 type Stage = "research" | "write" | "check" | "publish" | "done" | "failed";
 type JobData = {
@@ -23,13 +25,14 @@ type JobData = {
   feedback?: string[];
   check?: unknown;
   cost?: number;
+  models?: Record<string, string>;
   published_url?: string;
 };
 type Job = { id: string; topic_id: string; slug: string; stage: Stage; attempts: number; revisions: number; data: JobData };
 
 const MAX_STAGE_ATTEMPTS = 3;
 const MAX_REVISIONS = 1;
-const MAX_STEPS_PER_DAY = 90;
+const MAX_STEPS_PER_DAY = 120;
 
 function todayInIndia() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
@@ -70,14 +73,13 @@ async function runResearch(job: Job) {
   const data = job.data;
   data.voice = data.voice || VOICES[ARTICLE_TOPICS.indexOf(topic) % VOICES.length];
   data.listing = await getListingContext(topic.filters).catch(() => null);
-  const reply = await openRouterChat({
-    model: MODELS.research,
+  const reply = await pipelineChat("research", researchMessages(topic), {
     temperature: 0.2,
     max_tokens: 6000,
-    messages: researchMessages(topic),
     tools: [{ type: "openrouter:web_search", parameters: { engine: "exa", max_results: 4, max_total_results: 8 } }],
   });
   addCost(data, reply.usage?.cost);
+  data.models = { ...data.models, research: reply.model };
   const research = parseJsonReply<NonNullable<JobData["research"]>>(reply.content);
   const sources = (research.sources || []).filter((source) => typeof source?.url === "string" && source.url.startsWith("https://"));
   for (const citation of reply.citations) {
@@ -93,15 +95,15 @@ async function runResearch(job: Job) {
 async function runWrite(job: Job) {
   const topic = topicFor(job);
   const data = job.data;
-  const reply = await openRouterChat({
-    model: MODELS.writer,
+  const messages = writerMessages({ topic, voice: data.voice || VOICES[0], research: data.research, listingData: data.listing, existingGuides: await existingGuidePaths(), feedback: data.feedback });
+  const reply = await pipelineChat("write", messages, {
     temperature: 0.7,
     max_tokens: 24000,
     reasoning: { effort: "low" },
     response_format: { type: "json_object" },
-    messages: writerMessages({ topic, voice: data.voice || VOICES[0], research: data.research, listingData: data.listing, existingGuides: await existingGuidePaths(), feedback: data.feedback }),
   });
   addCost(data, reply.usage?.cost);
+  data.models = { ...data.models, write: reply.model };
   const article = cleanStrings(parseJsonReply<Record<string, unknown>>(reply.content));
   const blocks = Array.isArray(article.article_blocks) ? article.article_blocks as Record<string, unknown>[] : [];
   if (blocks.length < 8) throw new Error(`Draft too thin (${blocks.length} blocks)`);
@@ -115,15 +117,14 @@ async function runWrite(job: Job) {
 
 async function runCheck(job: Job) {
   const data = job.data;
-  const reply = await openRouterChat({
-    model: MODELS.checker,
+  const reply = await pipelineChat("check", checkerMessages(data.article, data.research, data.listing), {
     temperature: 0,
     max_tokens: 8000,
     reasoning: { effort: "low" },
     response_format: { type: "json_object" },
-    messages: checkerMessages(data.article, data.research, data.listing),
   });
   addCost(data, reply.usage?.cost);
+  data.models = { ...data.models, check: reply.model };
   const verdict = parseJsonReply<{ approved?: boolean; blocking_issues?: string[]; suggestions?: string[] }>(reply.content);
   data.check = verdict;
   const issues = (verdict.blocking_issues || []).filter((issue) => typeof issue === "string" && issue.trim());
@@ -225,7 +226,7 @@ export async function pipelineStatus() {
   if (!sql) return null;
   const day = todayInIndia();
   const [today] = await sql`select * from content_pipeline_days where day = ${day}`;
-  const jobs = await sql`select topic_id, slug, stage, attempts, revisions, last_error, data->>'cost' as cost,
+  const jobs = await sql`select topic_id, slug, stage, attempts, revisions, last_error, data->>'cost' as cost, data->'models' as models,
     data->>'published_url' as published_url, updated_at from content_pipeline_jobs order by created_at desc limit 25`;
   return { day, today: today || null, topics_total: ARTICLE_TOPICS.length, recent_jobs: jobs };
 }
@@ -235,7 +236,7 @@ export async function runPipelineStep(): Promise<{ action: string; more: boolean
   const sql = getDatabase();
   if (!sql) return { action: "no-database", more: false };
   const day = todayInIndia();
-  const target = 1 + Math.floor(Math.random() * 2);
+  const target = usingClaude() ? 5 + Math.floor(Math.random() * 6) : 1 + Math.floor(Math.random() * 2);
   await sql`insert into content_pipeline_days (day, target) values (${day}, ${target}) on conflict (day) do nothing`;
   const [counter] = await sql`update content_pipeline_days set steps = steps + 1 where day = ${day} returning target, published, steps`;
   if (counter.steps > MAX_STEPS_PER_DAY) return { action: "step-limit", more: false };
