@@ -66,9 +66,11 @@ p { color: var(--ink-soft); }
 .button:disabled { opacity: .65; cursor: wait; }
 .button-small { min-height: 42px; padding: 0 17px; }
 .button-secondary { color: var(--teal-dark); background: white; border-color: var(--line); }
-.button-secondary:hover { background: var(--aqua); }
+.button-secondary:hover { background: var(--aqua); color: var(--teal-dark); }
 .button-light { background: white; color: var(--ink); border-color: white; }
+.button-light:hover { background: var(--aqua); border-color: var(--aqua); color: var(--ink); }
 .button-outline-light { background: transparent; color: white; border-color: rgba(255,255,255,.4); }
+.button-outline-light:hover { background: rgba(255,255,255,.14); border-color: white; color: white; }
 .text-link, .card-link { display: inline-flex; align-items: center; gap: 7px; color: var(--teal-dark); font-weight: 800; font-size: .9rem; }
 
 .hero { position: relative; overflow: hidden; background: linear-gradient(145deg, #f8fbfc 20%, #eff9f6 100%); border-bottom: 1px solid var(--line); }
@@ -161,7 +163,8 @@ p { color: var(--ink-soft); }
 .prose h2 { margin-top: 46px; font-size: 1.8rem; }
 .prose h3 { margin-top: 34px; }
 .prose p, .prose li { color: var(--ink-soft); }
-.prose a { color: var(--teal-dark); text-decoration: underline; text-underline-offset: 3px; }
+/* Text links inside articles. Buttons keep their own colors (they used to inherit this and vanish on hover). */
+.prose a:where(:not(.button)) { color: var(--teal-dark); text-decoration: underline; text-underline-offset: 3px; }
 .article-byline { font-size: .84rem !important; }
 .editorial-trust { margin-bottom: 34px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: #f8fbfc; }
 .editorial-trust p { margin-bottom: 10px; }
@@ -896,3 +899,7 @@ a.location-count-badge:hover { border-color: var(--teal); background: #e4f5f2; }
 .related-guides li a svg { flex: none; }
 .related-guides li p { margin: 4px 0 0; font-size: .88rem; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .related-guides.is-wide { margin: 0; }
+
+/* Buttons never take link underlines or link colors from the container they sit in. */
+a.button, a.button:hover { text-decoration: none; }
+.button:not(.button-secondary):not(.button-light):hover { color: white; }
