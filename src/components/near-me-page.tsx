@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { RelatedGuides } from "@/components/related-guides";
+import { guidesForPillar } from "@/lib/internal-links";
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
 import { FaqSection } from "@/components/faq-section";
@@ -56,6 +58,7 @@ export async function NearMePage({ careSlug }: { careSlug: string }) {
     ],
   };
 
+  const topicGuides = await guidesForPillar(page.path, [page.keyword.replace(/ near me/i, ""), type.short]);
   return <>
     <JsonLd data={breadcrumbJsonLd} />
     <JsonLd data={buildFaqPageJsonLd(faqs)} />
@@ -83,6 +86,8 @@ export async function NearMePage({ careSlug }: { careSlug: string }) {
       <div className="section-heading"><div><span className="kicker plain">Other care near you</span><h2>Looking for something else?</h2></div><Link className="text-link" href="/care" prefetch={false}>All types of care <ArrowRight size={17} /></Link></div>
       <div className="provider-location-grid">{otherPages.map((item) => <Link className="provider-location-link" href={item.path} key={item.path} prefetch={false}><ArrowRight size={18} /><span><strong>{item.title}</strong><small>{cityCareTypes.find((t) => t.slug === item.careSlug)?.short} listings near you</small></span></Link>)}</div>
     </div></section>
+
+    {topicGuides.length ? <section className="section"><div className="shell"><RelatedGuides guides={topicGuides} title={`Guides on ${type.short.toLowerCase()}`} id="near-me-guides" className="is-wide" /></div></section> : null}
 
     <FaqSection faqs={faqs} />
   </>;

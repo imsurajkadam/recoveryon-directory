@@ -5,13 +5,14 @@ import { MODELS, openRouterChat, type ChatResult } from "@/lib/article-pipeline/
 
 // Picks the provider for each text stage. Claude while its credits last; DeepSeek on OpenRouter otherwise.
 
-type Stage = "research" | "write" | "check";
+type Stage = "research" | "write" | "check" | "link";
 type Message = { role: "system" | "user" | "assistant"; content: string };
 
 const CLAUDE_LIMITS: Record<Stage, { maxTokens: number; webSearch?: number }> = {
   research: { maxTokens: 8000, webSearch: 6 },
   write: { maxTokens: 20000 },
   check: { maxTokens: 6000 },
+  link: { maxTokens: 2500 },
 };
 
 // Set once Claude says the key or credits are no longer usable, so the rest of this run skips it.
@@ -39,7 +40,7 @@ export async function pipelineChat(
       console.error("Claude failed; falling back to OpenRouter", stage, error instanceof Error ? error.message : error);
     }
   }
-  const model = MODELS[stage === "write" ? "writer" : stage === "check" ? "checker" : "research"];
+  const model = MODELS[stage === "write" || stage === "link" ? "writer" : stage === "check" ? "checker" : "research"];
   const reply = await openRouterChat({ model, messages, ...openRouterOptions });
   return { ...reply, model };
 }

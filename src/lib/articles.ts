@@ -134,7 +134,7 @@ export async function getPublishedArticleSummaries() {
     reviewer_credentials, reviewed_at, published_at, updated_at,
     thumbnail_mime_type, thumbnail_base64 is not null as has_thumbnail,
     payload->>'hero_image_url' as hero_image_url,
-    '{}'::jsonb as payload
+    jsonb_build_object('internal_links', coalesce(payload->'internal_links', '[]'::jsonb), 'image_alt', payload->'image_alt') as payload
     from content_articles where status = 'published' order by published_at desc`;
   return rows.map((row) => mapPublishedArticle(row as ArticleRow));
 }

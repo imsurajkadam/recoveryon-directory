@@ -198,7 +198,7 @@ create table if not exists content_pipeline_jobs (
   topic_id text not null,
   slug text not null unique,
   stage text not null default 'research'
-    check (stage in ('research', 'write', 'check', 'publish', 'done', 'failed')),
+    check (stage in ('research', 'write', 'check', 'publish', 'link', 'done', 'failed')),
   attempts integer not null default 0,
   revisions integer not null default 0,
   data jsonb not null default '{}'::jsonb,

@@ -1,22 +1,27 @@
 import "server-only";
 
-import { saveArticlePackage, validateArticlePackage } from "@/lib/article-store";
+import { revalidatePath } from "next/cache";
+import { revalidateGuideSurfaces, saveArticlePackage, validateArticlePackage } from "@/lib/article-store";
 import { pipelineChat, usingClaude } from "@/lib/article-pipeline/llm";
 import { MODELS, openAiImage, openRouterChat, parseJsonReply } from "@/lib/article-pipeline/openrouter";
-import { checkerMessages, imagePrompt, researchMessages, VOICES, writerMessages } from "@/lib/article-pipeline/prompts";
+import { checkerMessages, imagePrompt, interlinkMessages, researchMessages, VOICES, writerMessages } from "@/lib/article-pipeline/prompts";
 import { ARTICLE_TOPICS, type ArticleTopic } from "@/lib/article-pipeline/topics";
-import { guides } from "@/lib/content";
+import { careCategories, guides } from "@/lib/content";
+import { pingIndexNow } from "@/lib/indexnow";
+import { insurers } from "@/lib/insurance-data";
+import { getLinkableGuides, rankRelated, STATIC_LINK_TARGETS } from "@/lib/internal-links";
 import { getDatabase } from "@/lib/db";
 import { notifyArticlePipeline } from "@/lib/form-notifications";
 import { getListingContext } from "@/lib/listing-context";
 import { uploadArticleWebp } from "@/lib/r2";
 
 // The article pipeline runs one stage per call so every call fits in a serverless time limit:
-//   research -> write -> check -> publish -> done
+//   research -> write -> check -> publish -> link -> done
+// "link" adds a contextual link to the new article from up to 3 related older articles, then pings IndexNow.
 // Jobs live in content_pipeline_jobs; each day gets a random target (IST): 5-10 articles while
 // Claude credits are in use, 1-2 once the pipeline is back on DeepSeek (OpenRouter).
 
-type Stage = "research" | "write" | "check" | "publish" | "done" | "failed";
+type Stage = "research" | "write" | "check" | "publish" | "link" | "done" | "failed";
 type JobData = {
   voice?: string;
   research?: Record<string, unknown> & { sources?: { title?: string; url: string; publisher?: string }[] };
@@ -27,6 +32,10 @@ type JobData = {
   cost?: number;
   models?: Record<string, string>;
   published_url?: string;
+  link_retry?: boolean;
+  internal_links?: { total: number; guides: number; removed: string[] };
+  linked_from?: string[];
+  link_error?: string;
 };
 type Job = { id: string; topic_id: string; slug: string; stage: Stage; attempts: number; revisions: number; data: JobData };
 
@@ -68,6 +77,42 @@ async function existingGuidePaths() {
   return [...new Set([...guides.map((guide) => guide.slug), ...rows.map((row) => String(row.slug))])].map((slug) => `/guides/${slug}`);
 }
 
+const LINK_PATTERN = /\[([^\]]{1,200})\]\(([^)\s]{1,500})\)/g;
+
+function linkTargets(existing: string[], topic: ArticleTopic) {
+  return new Set([
+    ...existing,
+    ...STATIC_LINK_TARGETS,
+    topic.pillar,
+    ...careCategories.map((category) => `/care/${category.slug}`),
+    ...insurers.map((insurer) => `/insurance/${insurer.slug}`),
+  ]);
+}
+
+/** Turns links to unknown internal paths (or to the article itself) back into plain text and counts the rest. */
+export function sanitizeInternalLinks(article: Record<string, unknown>, allowed: Set<string>, selfPath: string) {
+  const removed: string[] = [];
+  const kept = new Set<string>();
+  const fix = (text: string) => text.replace(LINK_PATTERN, (whole, label: string, href: string) => {
+    if (!href.startsWith("/")) return whole;
+    const path = href.split(/[?#]/)[0].replace(/\/$/, "") || "/";
+    if (path === selfPath || !allowed.has(path) || kept.has(path)) {
+      if (path !== selfPath && !allowed.has(path)) removed.push(href);
+      return label;
+    }
+    kept.add(path);
+    return whole;
+  });
+  const walk = (value: unknown, key = ""): unknown => {
+    if (typeof value === "string") return key === "href" || key === "src" ? value : fix(value);
+    if (Array.isArray(value)) return value.map((item) => walk(item));
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([childKey, item]) => [childKey, walk(item, childKey)]));
+    return value;
+  };
+  article.article_blocks = walk(article.article_blocks);
+  return { total: kept.size, guides: [...kept].filter((path) => path.startsWith("/guides/")).length, removed };
+}
+
 async function runResearch(job: Job) {
   const topic = topicFor(job);
   const data = job.data;
@@ -95,7 +140,11 @@ async function runResearch(job: Job) {
 async function runWrite(job: Job) {
   const topic = topicFor(job);
   const data = job.data;
-  const messages = writerMessages({ topic, voice: data.voice || VOICES[0], research: data.research, listingData: data.listing, existingGuides: await existingGuidePaths(), feedback: data.feedback });
+  const existing = await existingGuidePaths();
+  const linkable = await getLinkableGuides();
+  const relatedGuides = rankRelated({ slug: topic.slug, keyword: topic.keyword, category: topic.category, pillar: topic.pillar }, linkable, 10)
+    .map((guide) => ({ path: guide.path, title: guide.title }));
+  const messages = writerMessages({ topic, voice: data.voice || VOICES[0], research: data.research, listingData: data.listing, existingGuides: existing, relatedGuides, feedback: data.feedback });
   const reply = await pipelineChat("write", messages, {
     temperature: 0.7,
     max_tokens: 24000,
@@ -105,6 +154,15 @@ async function runWrite(job: Job) {
   addCost(data, reply.usage?.cost);
   data.models = { ...data.models, write: reply.model };
   const article = cleanStrings(parseJsonReply<Record<string, unknown>>(reply.content));
+  const links = sanitizeInternalLinks(article, linkTargets(existing, topic), `/guides/${topic.slug}`);
+  data.internal_links = links;
+  const wantedGuideLinks = Math.min(3, relatedGuides.length);
+  if ((links.total < 4 || links.guides < wantedGuideLinks) && !data.link_retry) {
+    // One retry with explicit feedback; after that the draft is accepted with what it has.
+    data.link_retry = true;
+    data.feedback = [...(data.feedback || []), `The draft had only ${links.total} valid internal links (${links.guides} to guides). Add 5-9 descriptive internal links, including at least ${wantedGuideLinks || 1} from the related guides list and the pillar page ${topic.pillar}.`];
+    throw new Error(`Too few internal links (${links.total} total, ${links.guides} guides)`);
+  }
   const blocks = Array.isArray(article.article_blocks) ? article.article_blocks as Record<string, unknown>[] : [];
   if (blocks.length < 8) throw new Error(`Draft too thin (${blocks.length} blocks)`);
   const kinds = new Set(blocks.map((block) => block.type));
@@ -211,14 +269,81 @@ async function runPublish(job: Job) {
   const result = await saveArticlePackage(parsed.data, `pipeline-${topic.slug}`);
   if (result.status >= 300) throw new Error(`Saving failed (${result.status}): ${JSON.stringify(result.body).slice(0, 300)}`);
   data.published_url = `https://treatmentlane.com/guides/${topic.slug}`;
+  return "link" as Stage;
+}
+
+/** Adds a contextual link to the new article from up to 3 related older pipeline articles, then pings IndexNow. */
+async function runLink(job: Job) {
+  const topic = topicFor(job);
+  const data = job.data;
+  const sql = getDatabase();
+  const newPath = `/guides/${topic.slug}`;
+  const linkedFrom: string[] = [];
+  try {
+    if (!sql) throw new Error("Database unavailable");
+    const all = await getLinkableGuides();
+    const self = all.find((guide) => guide.slug === topic.slug);
+    const candidates = rankRelated(
+      { slug: topic.slug, title: self?.title, keyword: topic.keyword, category: topic.category, pillar: topic.pillar },
+      all.filter((guide) => guide.automated),
+      6,
+    );
+    for (const candidate of candidates) {
+      if (linkedFrom.length >= 3) break;
+      try {
+        const [row] = await sql`select id, title, payload from content_articles where slug = ${candidate.slug} and status = 'published' limit 1`;
+        if (!row) continue;
+        const payload = (row.payload || {}) as Record<string, unknown>;
+        const blocks = Array.isArray(payload.article_blocks) ? payload.article_blocks as Record<string, unknown>[] : [];
+        if (JSON.stringify(blocks).includes(`](${newPath})`)) { linkedFrom.push(candidate.slug); continue; }
+        const paragraphs = blocks.flatMap((block, index) => block.type === "paragraph" && typeof block.text === "string" && block.text.length > 120 && index > 1
+          ? [{ index, text: block.text as string }] : []).slice(0, 30);
+        if (!paragraphs.length) continue;
+        const reply = await pipelineChat("link", interlinkMessages({
+          newTitle: String(data.article?.title || topic.keyword),
+          newPath,
+          newSummary: String(data.article?.excerpt || ""),
+          oldTitle: String(row.title),
+          paragraphs,
+        }), { temperature: 0.2, max_tokens: 2000, response_format: { type: "json_object" } });
+        addCost(data, reply.usage?.cost);
+        const answer = parseJsonReply<{ block_index?: number; text?: string; skip?: boolean }>(reply.content);
+        if (answer.skip || typeof answer.block_index !== "number" || typeof answer.text !== "string") continue;
+        const original = paragraphs.find((paragraph) => paragraph.index === answer.block_index);
+        if (!original) continue;
+        const text = cleanStrings(answer.text);
+        const originalLinks = [...original.text.matchAll(LINK_PATTERN)].map((match) => match[2]);
+        const newLinks = [...text.matchAll(LINK_PATTERN)].map((match) => match[2]);
+        const ratio = text.length / original.text.length;
+        const valid = newLinks.filter((href) => href === newPath).length === 1
+          && originalLinks.every((href) => newLinks.includes(href))
+          && ratio >= 0.9 && ratio <= 1.8;
+        if (!valid) continue;
+        blocks[answer.block_index] = { ...blocks[answer.block_index], text };
+        const internalLinks = Array.isArray(payload.internal_links) ? payload.internal_links as string[] : [];
+        const updated = { ...payload, article_blocks: blocks, internal_links: [...new Set([...internalLinks, newPath])].slice(0, 20) };
+        await sql`update content_articles set payload = ${sql.json(JSON.parse(JSON.stringify(updated)))}::jsonb, updated_at = now() where id = ${row.id}`;
+        revalidatePath(candidate.path);
+        linkedFrom.push(candidate.slug);
+      } catch (error) {
+        console.error("Interlink failed", candidate.slug, error);
+      }
+    }
+  } catch (error) {
+    data.link_error = error instanceof Error ? error.message.slice(0, 300) : String(error);
+  }
+  data.linked_from = linkedFrom;
+  revalidateGuideSurfaces(topic.slug);
+  await pingIndexNow([newPath, ...linkedFrom.map((slug) => `/guides/${slug}`), "/guides", topic.pillar]);
   return "done" as Stage;
 }
 
-const RUNNERS: Record<"research" | "write" | "check" | "publish", (job: Job) => Promise<Stage>> = {
+const RUNNERS: Record<"research" | "write" | "check" | "publish" | "link", (job: Job) => Promise<Stage>> = {
   research: runResearch,
   write: runWrite,
   check: runCheck,
   publish: runPublish,
+  link: runLink,
 };
 
 export async function pipelineStatus() {
@@ -239,7 +364,7 @@ export async function runPipelineStep(): Promise<{ action: string; more: boolean
   // Idle calls (the 10-minute trigger after the day's articles are out) should not use up the step budget.
   const [today] = await sql`select target, published from content_pipeline_days where day = ${day}`;
   if (today && today.published >= today.target) {
-    const [active] = await sql`select count(*)::int as n from content_pipeline_jobs where stage in ('research', 'write', 'check', 'publish')`;
+    const [active] = await sql`select count(*)::int as n from content_pipeline_jobs where stage in ('research', 'write', 'check', 'publish', 'link')`;
     if (active.n === 0) return { action: "daily-target-reached", more: false };
   }
   const target = usingClaude() ? 5 + Math.floor(Math.random() * 6) : 1 + Math.floor(Math.random() * 2);
@@ -250,12 +375,12 @@ export async function runPipelineStep(): Promise<{ action: string; more: boolean
   // Claim an unfinished job (the lock stops two overlapping calls from working on the same job).
   let [row] = await sql`update content_pipeline_jobs set locked_until = now() + interval '6 minutes', updated_at = now()
     where id = (select id from content_pipeline_jobs
-      where stage in ('research', 'write', 'check', 'publish') and (locked_until is null or locked_until < now())
+      where stage in ('research', 'write', 'check', 'publish', 'link') and (locked_until is null or locked_until < now())
       order by created_at limit 1 for update skip locked)
     returning id, topic_id, slug, stage, attempts, revisions, data`;
 
   if (!row) {
-    const [busy] = await sql`select count(*)::int as n from content_pipeline_jobs where stage in ('research', 'write', 'check', 'publish')`;
+    const [busy] = await sql`select count(*)::int as n from content_pipeline_jobs where stage in ('research', 'write', 'check', 'publish', 'link')`;
     if (busy.n > 0) return { action: "waiting-for-lock", more: false };
     if (counter.published >= counter.target) return { action: "daily-target-reached", more: false };
     const taken = new Set([
