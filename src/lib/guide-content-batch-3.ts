@@ -103,7 +103,7 @@ export const guideBatch3: Guide[] = [
   }),
   makeGuide({
     slug: "how-to-find-an-interventionist",
-    title: "How to find an interventionist",
+    title: "How do you find an interventionist?",
     description: "Learn how to review an interventionist's credentials, approach, fees, treatment relationships, safety planning, and conflicts of interest.",
     expansions: [
       "the agreement should name every company involved so the family can see who is responsible at each stage",
@@ -159,7 +159,7 @@ export const guideBatch3: Guide[] = [
   }),
   makeGuide({
     slug: "what-happens-after-an-intervention",
-    title: "What happens after an intervention",
+    title: "What happens after an intervention?",
     description: "Plan the next steps after an intervention, whether the person accepts treatment, asks for time, or declines the proposed care.",
     expansions: [
       "one designated coordinator can confirm the admission details while everyone else keeps the environment calm and avoids competing instructions",
@@ -469,7 +469,7 @@ export const guideBatch3: Guide[] = [
   }),
   makeGuide({
     slug: "what-happens-after-rehab",
-    title: "What happens after rehab",
+    title: "What happens after rehab?",
     description: "Plan the first year after intensive treatment with continuing care, medication, housing, work, relationships, safety, and regular reassessment.",
     expansions: [
       "appointments, prescriptions, transport, identification, insurance, housing, phone access, and emergency contacts should be resolved before departure",
@@ -497,7 +497,7 @@ export const guideBatch3: Guide[] = [
   }),
   makeGuide({
     slug: "relapse-prevention-plan",
-    title: "How to build a relapse prevention plan",
+    title: "How do you build a relapse prevention plan?",
     description: "Create a practical plan for warning signs, triggers, coping, medication, support, overdose prevention, and rapid return to care.",
     expansions: [
       "include the settings and transitions where earlier plans failed so prevention addresses real patterns rather than ideal conditions",

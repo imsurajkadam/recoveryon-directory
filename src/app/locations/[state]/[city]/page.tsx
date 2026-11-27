@@ -104,7 +104,7 @@ export default async function CityPage({ params, searchParams }: { params: Promi
     {careLinks.length ? <section className="section section-tint" id="care-types"><div className="shell">
       <div className="results-heading"><div><h2>Types of care in {city}</h2><p>Browse {city} listings by the kind of support you need.</p></div></div>
       <BarList items={careLinks.map(({ type, count }) => ({ label: `${type.label} in ${city}`, count, href: cityCarePath(state, city, type.slug) }))} />
-      <div style={{ marginTop: 34 }}><h3 style={{ marginBottom: 14 }}>How to use these listings</h3><StepsDiagram steps={listingSteps} /></div>
+      <div style={{ marginTop: 34 }}><h3 style={{ marginBottom: 14 }}>How do you use these listings?</h3><StepsDiagram steps={listingSteps} /></div>
     </div></section> : null}
 
     {nearbyCities.length ? <section className="section"><div className="shell">

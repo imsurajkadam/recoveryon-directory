@@ -188,7 +188,7 @@ export const guideBatch4: Guide[] = [
   }),
   makeGuide({
     slug: "what-to-pack-for-rehab",
-    title: "What to bring to rehab: a packing checklist",
+    title: "What should you bring to rehab? A packing checklist",
     description: "What to bring to rehab and what to leave at home: a facility-confirmed packing checklist covering identification, medication, clothing, toiletries, phones, money, and prohibited items.",
     expansions: [
       "policies can change, so reconfirm the list shortly before travel even when admission was arranged weeks earlier",
@@ -385,7 +385,7 @@ export const guideBatch4: Guide[] = [
   }),
   makeGuide({
     slug: "how-to-find-a-rehab-near-you",
-    title: "How to find a rehab near you",
+    title: "How do you find a rehab near you?",
     description: "Search for nearby addiction treatment using clinical needs, official directories, license checks, direct calls, cost verification, and safe comparison.",
     expansions: [
       "write the must-have services before searching so proximity does not displace medication, medical, psychiatric, or accessibility needs",
@@ -500,7 +500,7 @@ export const guideBatch4: Guide[] = [
   }),
   makeGuide({
     slug: "how-to-compare-two-rehabs",
-    title: "How to compare two rehabs",
+    title: "How do you compare two rehabs?",
     description: "Compare treatment programs side by side using clinical fit, safety, medication, staff, cost, access, daily experience, and continuing care.",
     expansions: [
       "write nonnegotiable needs first so a facility cannot win the comparison through amenities unrelated to the assessed risk",
@@ -557,7 +557,7 @@ export const guideBatch4: Guide[] = [
   }),
   makeGuide({
     slug: "how-addiction-develops",
-    title: "How addiction develops",
+    title: "How does addiction develop?",
     description: "Understand how substance effects, learning, biology, development, mental health, environment, and access can combine over time.",
     expansions: [
       "risk and protection can change over time as health, relationships, stress, access, and developmental stage change",
@@ -642,7 +642,7 @@ export const guideBatch4: Guide[] = [
   }),
   makeGuide({
     slug: "how-to-talk-to-your-doctor-about-addiction",
-    title: "How to talk to your doctor about addiction",
+    title: "How do you talk to your doctor about addiction?",
     description: "Prepare for a direct, useful conversation about substance use, withdrawal, medication, safety, privacy, treatment goals, and referrals.",
     expansions: [
       "a longer appointment reduces the chance that screening, withdrawal risk, medication, and referral planning are squeezed into minutes",

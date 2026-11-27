@@ -33,6 +33,7 @@ type JobData = {
   models?: Record<string, string>;
   published_url?: string;
   link_retry?: boolean;
+  question_retry?: boolean;
   internal_links?: { total: number; guides: number; removed: string[] };
   linked_from?: string[];
   link_error?: string;
@@ -90,6 +91,33 @@ function linkTargets(existing: string[], topic: ArticleTopic) {
 }
 
 /** Turns links to unknown internal paths (or to the article itself) back into plain text and counts the rest. */
+const QUESTION_START = /^(?:what|why|how|when|where|who|whom|whose|which|is|are|was|were|does|did|can|could|should|would|will|do(?!\s+not\b))\b/i;
+
+/** A heading-like string that starts (or has a part after ": " starting) like a question but does not end with "?". */
+export function missingQuestionMark(text: string) {
+  const value = text.trim();
+  if (!value || value.endsWith("?")) return false;
+  const lastPart = value.split(/(?<=[:?])\s+/).at(-1) || value;
+  return QUESTION_START.test(lastPart);
+}
+
+/** Collects every title-like string in a draft (title, seo_title, headings, box titles, FAQ questions). */
+function headingStrings(article: Record<string, unknown>) {
+  const out: { get: () => string; set: (value: string) => void }[] = [];
+  const add = (holder: Record<string, unknown>, key: string) => {
+    if (typeof holder[key] === "string") out.push({ get: () => holder[key] as string, set: (value) => { holder[key] = value; } });
+  };
+  add(article, "title");
+  add(article, "seo_title");
+  for (const block of Array.isArray(article.article_blocks) ? article.article_blocks as Record<string, unknown>[] : []) {
+    if (block.type === "heading") add(block, "text");
+    add(block, "title");
+    if (block.type === "steps" && Array.isArray(block.items)) for (const item of block.items as Record<string, unknown>[]) add(item, "title");
+  }
+  for (const item of Array.isArray(article.faq) ? article.faq as Record<string, unknown>[] : []) add(item, "question");
+  return out;
+}
+
 export function sanitizeInternalLinks(article: Record<string, unknown>, allowed: Set<string>, selfPath: string) {
   const removed: string[] = [];
   const kept = new Set<string>();
@@ -155,6 +183,14 @@ async function runWrite(job: Job) {
   addCost(data, reply.usage?.cost);
   data.models = { ...data.models, write: reply.model };
   const article = cleanStrings(parseJsonReply<Record<string, unknown>>(reply.content));
+  const unmarked = headingStrings(article).filter((item) => missingQuestionMark(item.get()));
+  if (unmarked.length && !data.question_retry) {
+    // One retry asking for proper questions; after that any leftovers simply get a question mark added.
+    data.question_retry = true;
+    data.feedback = [...(data.feedback || []), `These headings start like questions but are not complete questions ending with "?": ${unmarked.map((item) => `"${item.get()}"`).join("; ")}. Rewrite each as a full grammatical question ending with a question mark, or as a plain statement that does not start with a question word.`];
+    throw new Error(`Headings missing question marks: ${unmarked.length}`);
+  }
+  for (const item of unmarked) item.set(`${item.get().replace(/[.!;:,\s]+$/, "")}?`);
   const links = sanitizeInternalLinks(article, linkTargets(existing, topic), `/guides/${topic.slug}`);
   data.internal_links = links;
   const wantedGuideLinks = Math.min(3, relatedGuides.length);
@@ -236,12 +272,18 @@ async function runPublish(job: Job) {
     return inlineUrl ? [{ type: "image", src: inlineUrl, alt: block.alt || topic.keyword, caption: block.caption }] : [];
   });
   const clip = (value: unknown, max: number) => String(value || "").slice(0, max).trim();
+  // Cuts at a word boundary and keeps a closing question mark when the full title had one.
+  const clipTitle = (value: string, max: number) => {
+    if (value.length <= max) return value.trim();
+    const cut = value.slice(0, max - 1).replace(/\s+\S*$/, "").replace(/[,:;]+$/, "").trim();
+    return value.trim().endsWith("?") ? `${cut}?` : cut;
+  };
   const pkg = {
     content_unit_id: `TLP-${topic.id}`,
     title: clip(article.title, 180),
     slug: topic.slug,
     excerpt: clip(article.excerpt, 500),
-    seo_title: clip(article.seo_title || article.title, 60),
+    seo_title: clipTitle(String(article.seo_title || article.title || ""), 60),
     meta_description: clip(article.meta_description, 175),
     primary_keyword: topic.keyword,
     secondary_keywords: (Array.isArray(article.secondary_keywords) ? article.secondary_keywords : []).slice(0, 12).map((item) => clip(item, 180)).filter((item) => item.length >= 2),
