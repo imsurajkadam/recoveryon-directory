@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { RelatedGuides } from "@/components/related-guides";
+import { guidesForPillar } from "@/lib/internal-links";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ShieldCheck, SlidersHorizontal } from "lucide-react";
@@ -38,6 +40,7 @@ export default async function InsurancePage({ params }: { params: Promise<{ slug
   // the same matching the directory search uses.
   const { providers, total } = await searchProviders({ insurance: insurer.name, state: insurer.state, sort: "most-reviewed", pageSize: 24 });
   const otherInsurers = insurers.filter((i) => i.slug !== insurer.slug);
+  const topicGuides = await guidesForPillar(`/insurance/${insurer.slug}`, [insurer.name, "insurance coverage"]);
 
   return <>
     <section className="page-hero page-hero-compact"><div className="shell">
@@ -56,6 +59,7 @@ export default async function InsurancePage({ params }: { params: Promise<{ slug
       </> : <div className="empty-state"><h2>No listings found</h2><p>We have not yet tagged providers accepting {insurer.name}. <Link href="/directory">Browse all listings</Link> or <Link href="/insurance">compare other insurance options</Link>.</p></div>}
     </div></section>
     <InsuranceExplainer insurerName={insurer.name} />
+    {topicGuides.length ? <section className="section"><div className="shell"><RelatedGuides guides={topicGuides} title={`Guides on ${insurer.name} and paying for treatment`} id="insurer-guides" className="is-wide" /></div></section> : null}
     {insurer.slug === "medicaid" ? <section className="section"><div className="shell">
       <div className="section-heading"><div><span className="kicker plain">By state</span><h2>Rehabs that accept Medicaid, by state</h2><p>Each state runs its own Medicaid program, so covered services and how to start treatment differ.</p></div></div>
       <div className="state-grid">{medicaidStates.map((item) => { const state = stateByCode(item.code); return state ? <Link key={item.code} href={`/insurance/medicaid/${state.slug}`} prefetch={false}><ShieldCheck size={18} /><span>{state.name}</span><ArrowRight size={16} /></Link> : null; })}</div>

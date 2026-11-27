@@ -100,6 +100,16 @@ export function validateArticlePackage(input: unknown) {
   return draftSchema.safeParse(input);
 }
 
+/** Refreshes every page that lists or links guides, plus the sitemaps, after an article changes. */
+export function revalidateGuideSurfaces(slug?: string) {
+  revalidatePath("/guides");
+  if (slug) revalidatePath(`/guides/${slug}`);
+  revalidatePath("/guides/[slug]", "page");
+  revalidatePath("/care/[category]", "page");
+  revalidatePath("/insurance/[slug]", "page");
+  for (const path of ["/sober-living-near-me", "/iop-near-me", "/detox-centers-near-me", "/sitemap.xml", "/sitemaps/guides.xml"]) revalidatePath(path);
+}
+
 export async function saveArticlePackage(data: z.output<typeof draftSchema>, idempotencyKey: string): Promise<{ status: number; body: Record<string, unknown> }> {
   const sql = getDatabase();
   if (!sql) return { status: 503, body: { message: "Database unavailable" } };
@@ -156,8 +166,7 @@ export async function saveArticlePackage(data: z.output<typeof draftSchema>, ide
       updated_at = now()
     returning id, slug, status, scheduled_at`;
   if (rows[0]) {
-    revalidatePath("/guides");
-    revalidatePath(`/guides/${payload.slug}`);
+    revalidateGuideSurfaces(payload.slug);
     return { status: 201, body: { article: rows[0], created: true, images_uploaded: uploaded.size, images_requested: images.length, hero_image_url: heroImageUrl } };
   }
   const existing = await sql`select id, slug, status, scheduled_at from content_articles

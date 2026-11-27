@@ -3,7 +3,8 @@ import { guides } from "@/lib/content";
 import { absoluteUrl } from "@/lib/site";
 import { sitemapResponse } from "@/lib/sitemap-xml";
 
-export const revalidate = 86400;
+// Publishing revalidates this route; the hourly fallback keeps it fresh if that ever misses.
+export const revalidate = 3600;
 
 export async function GET() {
   const articles = await getPublishedArticleSummaries();

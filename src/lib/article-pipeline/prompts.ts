@@ -51,6 +51,7 @@ export function writerMessages(input: {
   research: unknown;
   listingData: unknown;
   existingGuides: string[];
+  relatedGuides: { path: string; title: string }[];
   feedback?: string[];
 }) {
   const { topic } = input;
@@ -63,7 +64,20 @@ export function writerMessages(input: {
     "This is health content: educate, never diagnose, never give individual medical instructions, never promise outcomes, and say clearly when a clinician has to decide.",
     "Every specific fact, figure, timeline or coverage rule must come from the research JSON and be cited inline as [publisher or page title](https URL), using only URLs from the research.",
     "STYLE RULES: no em dashes or en dashes anywhere (use commas, colons or two sentences). Any heading or title phrased as a question ends with a question mark. US spelling. Paragraphs of 2-4 sentences. Concrete and useful. Never use filler such as \"in today's world\", \"it is important to note\", \"navigating\", \"journey\", \"delve\" or \"landscape\".",
-    `Internal links: use [label](/path) only for these TreatmentLane pages: ${topic.pillar}, /directory, /insurance, /care, /emergency-help, /sober-living-near-me, /iop-near-me, /detox-centers-near-me, and these guides: ${input.existingGuides.slice(0, 120).join(", ")}.`,
+    `Internal links: use [label](/path) only for these TreatmentLane pages: ${topic.pillar}, /directory, /insurance, /care, /emergency-help, /sober-living-near-me, /iop-near-me, /detox-centers-near-me, and these guides: ${input.existingGuides.slice(0, 150).join(", ")}. Any other internal path is a broken link.`,
+    "SEO RULES (the article must be the most useful result for this search):",
+    "- Put the primary keyword (or a natural close variant) in the title, the seo_title, the meta_description, the first 100 words, and at least one H2. Never stuff it: use it naturally, and use the secondary keywords and related phrases across headings and body.",
+    "- Right after key_takeaways, answer the search query directly in a 40-60 word paragraph that could be quoted as a featured snippet.",
+    "- Phrase most H2s as the real questions people search (from people_also_ask), each followed by a direct 1-2 sentence answer before details.",
+    "- FAQ answers: 40-70 words each, self-contained, answering the question in the first sentence. Do not repeat FAQs that the body already answers word for word.",
+    "- seo_title: max 60 characters, keyword near the start, no site name. meta_description: 140-155 characters, includes the keyword and a reason to click.",
+    "- image_alt: describes the illustration and includes the topic naturally.",
+    "INTERNAL LINKING (required, this is how the site ranks):",
+    "- Include 5 to 9 internal links inside paragraphs, list items, steps or callouts, spread across the article (not all in one section).",
+    `- Link the pillar page ${topic.pillar} once, early in the article.`,
+    `- Link at least 3 different guides from this most-related list, where they genuinely help the reader: ${input.relatedGuides.map((guide) => `${guide.title} (${guide.path})`).join("; ") || "none yet"}.`,
+    "- Link one listings page (/directory, a /care page, a near-me page or an /insurance page) where the reader would act.",
+    "- Anchor text must be descriptive words from the sentence that say what the linked page covers (for example [how long medical detox takes](/guides/...)). Never use 'click here', 'this guide', 'read more' or a bare URL. Never link the same page twice, and never link to this article itself.",
   ].join("\n");
   const blocks = [
     "article_blocks is an ordered array that mixes several block kinds (never only paragraphs). Allowed shapes:",
@@ -121,4 +135,26 @@ export function imagePrompt(description: string) {
     "Landscape 3:2 composition, subject centered, readable as a small thumbnail.",
     "Strictly no text, letters, numbers or logos. No realistic faces. No pills, capsules, syringes, needles, alcohol bottles, drugs, blood or distressed people.",
   ].join(" ");
+}
+
+/** Asks for one existing paragraph to be lightly rewritten so it links to a newly published guide. */
+export function interlinkMessages(input: { newTitle: string; newPath: string; newSummary: string; oldTitle: string; paragraphs: { index: number; text: string }[] }) {
+  return [
+    {
+      role: "system" as const,
+      content: "You are the internal-linking editor for TreatmentLane, a US directory of addiction and mental health treatment providers. You add one natural, genuinely helpful link from an existing article to a new one, changing as few words as possible.",
+    },
+    {
+      role: "user" as const,
+      content: [
+        `New article: "${input.newTitle}" at ${input.newPath}. What it covers: ${input.newSummary}`,
+        `Existing article: "${input.oldTitle}". Its paragraphs, numbered:`,
+        input.paragraphs.map((paragraph) => `[${paragraph.index}] ${paragraph.text}`).join("\n\n"),
+        "Pick the ONE paragraph where a reader would most want the new article, and return it with one link added as [descriptive anchor words](" + input.newPath + ").",
+        "Rules: keep every existing sentence, fact and link exactly as it is; you may add or adjust at most one short clause so the link reads naturally; the anchor text must describe what the new article covers (never 'click here', 'this guide' or 'read more'); no em or en dashes; US spelling.",
+        "If no paragraph is a genuinely natural fit, skip.",
+        `Return ONLY JSON: {"block_index": number, "text": "the full rewritten paragraph"} or {"skip": true}.`,
+      ].join("\n\n"),
+    },
+  ];
 }
