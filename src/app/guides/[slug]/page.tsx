@@ -27,7 +27,7 @@ const editorialAuthor = (name: string) => ({ "@type": "Organization", name, url:
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const guide = guides.find((item) => item.slug === slug);
-  if (guide) return { title: withQuestionMark(guide.title), description: guide.description, alternates: { canonical: `/guides/${guide.slug}` }, openGraph: { type: "article", title: withQuestionMark(guide.title), description: guide.description } };
+  if (guide) return { title: withQuestionMark(guide.title), description: guide.description, alternates: { canonical: `/guides/${guide.slug}` }, openGraph: { type: "article", url: absoluteUrl(`/guides/${guide.slug}`), siteName: SITE_NAME, title: withQuestionMark(guide.title), description: guide.description, modifiedTime: guide.reviewedOn }, twitter: { card: "summary_large_image", title: withQuestionMark(guide.title), description: guide.description } };
   const article = await getPublishedArticleBySlug(slug);
   if (!article) return {};
   const image = article.heroImageUrl || (article.hasThumbnail ? absoluteUrl(`/api/content/articles/${article.id}/thumbnail`) : undefined);
