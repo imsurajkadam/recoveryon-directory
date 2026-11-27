@@ -236,6 +236,12 @@ export async function runPipelineStep(): Promise<{ action: string; more: boolean
   const sql = getDatabase();
   if (!sql) return { action: "no-database", more: false };
   const day = todayInIndia();
+  // Idle calls (the 10-minute trigger after the day's articles are out) should not use up the step budget.
+  const [today] = await sql`select target, published from content_pipeline_days where day = ${day}`;
+  if (today && today.published >= today.target) {
+    const [active] = await sql`select count(*)::int as n from content_pipeline_jobs where stage in ('research', 'write', 'check', 'publish')`;
+    if (active.n === 0) return { action: "daily-target-reached", more: false };
+  }
   const target = usingClaude() ? 5 + Math.floor(Math.random() * 6) : 1 + Math.floor(Math.random() * 2);
   await sql`insert into content_pipeline_days (day, target) values (${day}, ${target}) on conflict (day) do nothing`;
   const [counter] = await sql`update content_pipeline_days set steps = steps + 1 where day = ${day} returning target, published, steps`;
