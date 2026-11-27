@@ -113,7 +113,7 @@ export type Guide = {
 export const guides: Guide[] = [
   {
     slug: "how-to-verify-a-treatment-provider",
-    title: "How to verify a treatment provider",
+    title: "How do you verify a treatment provider?",
     description: "A practical checklist for reviewing licensing, accreditation, services, costs, and fit before making a decision.",
     reviewedOn: "2026-09-28",
     sections: [
@@ -178,7 +178,7 @@ export const guides: Guide[] = [
         body: "A 2026 nationwide pricing study that contacted more than 1,000 residential facilities found a 30-day residential stay averaged about $27,500 before insurance. The same study estimated medical detox at about $6,500 for an average six-day stay, partial hospitalization at about $15,000 for 30 days, and intensive outpatient care at about $10,400 for 30 sessions. People using in-network insurance paid roughly one-fifth of those list prices on average, though actual out-of-pocket costs depend on the plan's deductible, coinsurance, and covered services. These are estimates, not guarantees: detox is often bundled into residential pricing, and your cost will depend on your plan, your location, and the facility you choose.",
       },
       {
-        heading: "What makes one program cost more than another",
+        heading: "What makes one program cost more than another?",
         body: "Length of stay is the biggest cost driver, since a 90-day residential program costs far more than a 30-day one. Location matters too, as programs in high-cost metro areas charge more than comparable programs elsewhere, and medical staffing levels, hours of one-on-one therapy, and amenities like private rooms also push prices up. A higher price does not automatically mean better clinical care, so compare the treatment itself, such as staff credentials and therapy hours, rather than the amenities. When two programs offer similar clinical care, the less expensive one is usually the smarter choice.",
       },
       {
@@ -229,7 +229,7 @@ export const guides: Guide[] = [
         body: "Medicaid covers substance use disorder treatment, and federal rules require Medicaid managed care plans to meet the same parity standards as private plans. The exact services covered, such as residential stays or specific medications, vary from state to state, so call your plan or your state's Medicaid office to confirm. Medicare also covers substance use treatment, including inpatient and outpatient care, subject to its own cost-sharing and coverage rules. If you are uninsured, SAMHSA's National Helpline at 1-800-662-4357 can connect you with state-funded programs at no cost.",
       },
       {
-        heading: "How to verify your benefits in 15 minutes",
+        heading: "How do you verify your benefits in 15 minutes?",
         body: "Call the member services number on your insurance card and ask whether the facility is in-network, whether the level of care is covered, whether prior authorization is required, and what your deductible, copay, and out-of-pocket maximum are. Also ask what clinical criteria the plan uses to decide medical necessity, since that determines whether your stay gets authorized. Write down the answers with the date, the representative's name, and any reference number, and ask the treatment center to confirm the same details in writing. Keep these records until every bill is resolved, because they are your evidence if a dispute arises.",
       },
       {
@@ -348,7 +348,7 @@ export const guides: Guide[] = [
   },
   {
     slug: "php-vs-iop-vs-outpatient",
-    title: "How to choose between PHP, IOP, and outpatient care",
+    title: "How do you choose between PHP, IOP, and outpatient care?",
     description:
       "PHP, IOP, and standard outpatient treatment let you live outside a facility while receiving different levels of structure. Learn how assessments, safety, support, and daily responsibilities affect the choice. This is educational information only, not medical advice.",
     reviewedOn: "2026-10-17",
@@ -489,7 +489,7 @@ export const guides: Guide[] = [
   },
   {
     slug: "help-a-loved-one-who-refuses-treatment",
-    title: "How to help a loved one who refuses treatment",
+    title: "How do you help a loved one who refuses treatment?",
     description:
       "You cannot force a lasting recovery conversation, but you can improve safety, reduce barriers, set clear boundaries, and keep the door open. Learn practical steps for supporting a loved one and yourself.",
     reviewedOn: "2026-10-17",

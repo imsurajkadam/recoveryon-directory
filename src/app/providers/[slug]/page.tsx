@@ -113,7 +113,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ s
       {stateGroups.length > 1 ? <div className="inline-actions">{stateGroups.slice(0, 12).map((group) => <a className="button button-secondary" href={`#state-${group.code.toLowerCase()}`} key={group.code}>{group.name} ({group.items.length})</a>)}</div> : null}
     </div></section>
     {careTypes.length || insurance.length || therapies.length ? <section className="section section-tight"><div className="shell">
-      <div className="results-heading"><div><h2>What {name} offers</h2><p>Combined from the published records of all {providers.length.toLocaleString("en-US")} locations. Services vary by location.</p></div></div>
+      <div className="results-heading"><div><h2>What does {name} offer?</h2><p>Combined from the published records of all {providers.length.toLocaleString("en-US")} locations. Services vary by location.</p></div></div>
       <div className="organization-facts">
         {careTypes.length ? <div><h3>Levels of care</h3><ul>{careTypes.map((item) => <li key={item.label}>{item.label} <small>{item.count} {item.count === 1 ? "location" : "locations"}</small></li>)}</ul></div> : null}
         {insurance.length ? <div><h3>Insurance on file</h3><ul>{insurance.map((item) => <li key={item.label}>{item.label} <small>{item.count} {item.count === 1 ? "location" : "locations"}</small></li>)}</ul></div> : null}

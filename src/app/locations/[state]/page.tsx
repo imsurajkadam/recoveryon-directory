@@ -96,7 +96,7 @@ export default async function StatePage({ params, searchParams }: { params: Prom
       <BarList items={careTypes.map((category) => ({ label: category.name, count: category.count, href: `/directory?state=${state.code}&category=${encodeURIComponent(category.name)}` }))} />
     </div></section> : null}
     <section className="section section-snug section-tint"><div className="shell">
-      <div className="section-heading"><div><h2>How to use these {state.name} listings</h2><p>Four steps from first search to a decision.</p></div></div>
+      <div className="section-heading"><div><h2>How do you use these {state.name} listings?</h2><p>Four steps from first search to a decision.</p></div></div>
       <StepsDiagram steps={listingSteps} />
     </div></section>
     {editorial ? <section className="section state-guidance" id="guide"><div className="shell content-shell prose">

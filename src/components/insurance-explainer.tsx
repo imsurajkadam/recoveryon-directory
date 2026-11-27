@@ -5,7 +5,7 @@ import { insuranceSteps, insuranceTerms } from "@/lib/care-facts";
 export function InsuranceExplainer({ insurerName }: { insurerName?: string }) {
   return <>
     <section className="section section-snug" id="check-coverage"><div className="shell">
-      <div className="section-heading"><div><h2>How to check your {insurerName ? `${insurerName} ` : ""}coverage</h2><p>A listing shows what a provider reports accepting. Only your plan can confirm what it will pay.</p></div></div>
+      <div className="section-heading"><div><h2>How do you check your {insurerName ? `${insurerName} ` : ""}coverage?</h2><p>A listing shows what a provider reports accepting. Only your plan can confirm what it will pay.</p></div></div>
       <StepsDiagram steps={insuranceSteps} />
     </div></section>
     <section className="section section-snug section-tint" id="terms"><div className="shell">
