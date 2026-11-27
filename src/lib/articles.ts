@@ -71,9 +71,10 @@ function stringList(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
+// The database driver returns timestamps as Date objects, not strings. Only accepting strings made every
+// article date fall back to 1 January 1970 (shown as "Editorially checked January 1, 1970").
 function isoDate(value: unknown, fallback: string) {
-  const candidate = text(value, fallback);
-  const parsed = new Date(candidate);
+  const parsed = value instanceof Date ? value : new Date(typeof value === "string" || typeof value === "number" ? value : fallback);
   return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
 }
 
